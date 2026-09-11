@@ -24,6 +24,22 @@ class DownloadService {
     ),
   );
 
+  /// Separate client for fetching the actual video file.
+  ///
+  /// The API client sends JSON headers and uses a short receive timeout, both
+  /// of which break large binary downloads: `Accept: application/json` can make
+  /// the server answer with JSON instead of the file, and a 30s receive timeout
+  /// aborts slow transfers.
+  final Dio _fileDio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(minutes: 10),
+      headers: {'Accept': '*/*'},
+      followRedirects: true,
+      responseType: ResponseType.stream,
+    ),
+  );
+
   static const String _cacheKey = 'recent_downloads';
 
   // ============================================================
@@ -296,7 +312,7 @@ class DownloadService {
 
       debugPrint('⬇️ Starting video download from server...');
 
-      await _dio.download(
+      await _fileDio.download(
         videoUrl,
         filePath,
         onReceiveProgress: (received, total) {

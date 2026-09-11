@@ -6,6 +6,20 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'services/download_service.dart';
 
+/// Turns a thrown error into something worth showing the user, falling back to
+/// [fallback] when the error carries no useful message.
+String _friendlyError(Object error, String fallback) {
+  final message = error
+      .toString()
+      .replaceFirst('Exception: ', '')
+      .replaceFirst('DioException', '')
+      .trim();
+
+  if (message.isEmpty || message.length > 160) return fallback;
+
+  return message;
+}
+
 class PasteLinkScreen extends StatefulWidget {
   final String platformName;
 
@@ -155,34 +169,26 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
     }
 
     // ============================================================
-    // TIKTOK EXTRA URL INFO CHECK
+    // CLEAN TRACKING PARAMETERS FROM THE LINK
     // ============================================================
+    //
+    // Links shared from the TikTok/Instagram/Facebook apps carry tracking
+    // query parameters that the extractor chokes on. Strip them instead of
+    // asking the user to edit the link by hand.
 
-    if (platform.contains('tiktok') && uri.queryParameters.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: const Color(0xff287EFF),
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 5),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          content: Row(
-            children: [
-              const Icon(Icons.link_off_rounded, color: Colors.white, size: 22),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Please remove extra information from the TikTok link and try again.',
-                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 11),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+    String requestUrl = url;
 
-      return;
+    if (uri.hasQuery || uri.hasFragment) {
+      var cleaned = uri.replace(query: '', fragment: '').toString();
+
+      while (cleaned.endsWith('?') || cleaned.endsWith('#')) {
+        cleaned = cleaned.substring(0, cleaned.length - 1);
+      }
+
+      if (cleaned.isNotEmpty) {
+        requestUrl = cleaned;
+        debugPrint('🧹 Cleaned link: $requestUrl');
+      }
     }
 
     if (!mounted) return;
@@ -203,12 +209,12 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
       debugPrint('==========================================');
       debugPrint('📤 PASTE LINK DOWNLOAD');
       debugPrint('🌐 Platform: ${widget.platformName}');
-      debugPrint('🔗 URL: $url');
+      debugPrint('🔗 URL: $requestUrl');
       debugPrint('🎞️ Quality: $_selectedQuality');
       debugPrint('==========================================');
 
       final download = await DownloadService.instance.createDownload(
-        url: url,
+        url: requestUrl,
         platform: widget.platformName,
         quality: _selectedQuality,
       );
@@ -325,7 +331,10 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'We couldn’t download this video. Please check the link and try again.',
+                  _friendlyError(
+                    e,
+                    'We couldn’t download this video. Please check the link and try again.',
+                  ),
                   style: GoogleFonts.poppins(color: Colors.white, fontSize: 11),
                 ),
               ),
@@ -342,10 +351,14 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF07132D),
-      body: SafeArea(
-        child: Stack(children: [const _DownloadBackground(), _buildBody()]),
+    return PopScope(
+      // Don't let the system back button abandon a running download.
+      canPop: !_isDownloading,
+      child: Scaffold(
+        backgroundColor: const Color(0xFF07132D),
+        body: SafeArea(
+          child: Stack(children: [const _DownloadBackground(), _buildBody()]),
+        ),
       ),
     );
   }

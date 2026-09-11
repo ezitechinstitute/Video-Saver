@@ -2,7 +2,10 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'home_screen.dart';
+import 'main.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -55,7 +58,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _goToHome();
   }
 
-  void _goToHome() {
+  Future<void> _goToHome() async {
+    // Remember that onboarding is done so it is not shown on every launch.
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(kOnboardingSeenKey, true);
+    } catch (e) {
+      debugPrint('⚠️ Could not save onboarding flag: $e');
+    }
+
+    if (!mounted) return;
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const HomeScreen()),
