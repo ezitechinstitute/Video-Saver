@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'how_to_download_screen.dart';
+import 'platforms.dart';
 import 'services/download_service.dart';
+import 'webview_screen.dart';
 
 /// Turns a thrown error into something worth showing the user, falling back to
 /// [fallback] when the error carries no useful message.
@@ -74,6 +77,49 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
     });
   }
 
+  void _showError(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: Colors.red.shade900,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 5),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline_rounded, color: Colors.white),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                message,
+                style: GoogleFonts.poppins(color: Colors.white, fontSize: 11),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // BROWSE THE PLATFORM IN-APP
+  // ============================================================
+
+  void _browsePlatform() {
+    final platform = platformByName(widget.platformName);
+
+    if (platform == null || !platform.canBrowse) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            WebViewScreen(url: platform.browseUrl, platformName: platform.name),
+      ),
+    );
+  }
+
   // ============================================================
   // DOWNLOAD
   // ============================================================
@@ -124,72 +170,40 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
       return;
     }
 
-    final platform = widget.platformName.toLowerCase();
-
     // ============================================================
-    // BASIC PLATFORM VALIDATION
+    // PLATFORM AND VIDEO-LINK VALIDATION
     // ============================================================
+    //
+    // Catching a bad link here matters: on the server every non-video URL
+    // becomes a yt-dlp run that is guaranteed to fail, and the user waits
+    // through it only to be told it did not work.
 
-    bool validPlatform = true;
+    final platform = platformByName(widget.platformName);
 
-    if (platform.contains('tiktok')) {
-      validPlatform =
-          uri.host.contains('tiktok.com') || uri.host.contains('vm.tiktok.com');
-    } else if (platform.contains('instagram')) {
-      validPlatform = uri.host.contains('instagram.com');
-    } else if (platform.contains('facebook')) {
-      validPlatform =
-          uri.host.contains('facebook.com') || uri.host.contains('fb.watch');
-    }
+    if (platform != null && !platform.matchesHost(uri)) {
+      final pasted = platformForUrl(uri);
 
-    if (!validPlatform) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.red.shade900,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          content: Row(
-            children: [
-              const Icon(Icons.error_outline_rounded, color: Colors.white),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Please paste a valid ${widget.platformName} video link.',
-                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 11),
-                ),
-              ),
-            ],
-          ),
-        ),
+      _showError(
+        pasted == null
+            ? 'That is not a ${widget.platformName} link. Paste a link copied from ${widget.platformName}.'
+            : 'That looks like a ${pasted.name} link. Open ${pasted.name} from the home screen to download it.',
       );
-
       return;
     }
 
-    // ============================================================
-    // CLEAN TRACKING PARAMETERS FROM THE LINK
-    // ============================================================
-    //
-    // Links shared from the TikTok/Instagram/Facebook apps carry tracking
-    // query parameters that the extractor chokes on. Strip them instead of
-    // asking the user to edit the link by hand.
-
-    String requestUrl = url;
-
-    if (uri.hasQuery || uri.hasFragment) {
-      var cleaned = uri.replace(query: '', fragment: '').toString();
-
-      while (cleaned.endsWith('?') || cleaned.endsWith('#')) {
-        cleaned = cleaned.substring(0, cleaned.length - 1);
-      }
-
-      if (cleaned.isNotEmpty) {
-        requestUrl = cleaned;
-        debugPrint('🧹 Cleaned link: $requestUrl');
-      }
+    if (platform != null && !platform.isVideoUrl(uri)) {
+      _showError(
+        'That link points at a page, not a video. Open the video on '
+        '${widget.platformName}, tap Share, then copy the link.',
+      );
+      return;
     }
+
+    // Links shared from the platform apps carry tracking parameters that the
+    // extractor chokes on, so strip them before sending.
+    final String requestUrl = cleanVideoUrl(uri);
+
+    debugPrint('🧹 Cleaned link: $requestUrl');
 
     if (!mounted) return;
 
@@ -433,7 +447,24 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
               ),
             ),
           ),
-          _GlassIconButton(icon: Icons.help_outline_rounded, onTap: () {}),
+          if (platformByName(widget.platformName)?.canBrowse ?? false) ...[
+            _GlassIconButton(
+              icon: Icons.travel_explore_rounded,
+              onTap: _isDownloading ? () {} : _browsePlatform,
+            ),
+            const SizedBox(width: 8),
+          ],
+          _GlassIconButton(
+            icon: Icons.help_outline_rounded,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const HowToDownloadScreen(),
+                ),
+              );
+            },
+          ),
         ],
       ),
     );

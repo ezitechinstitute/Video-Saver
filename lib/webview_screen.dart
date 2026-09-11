@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import 'platforms.dart';
 import 'services/download_service.dart';
 
 /// Turns a thrown error into something worth showing the user, falling back to
@@ -408,89 +409,52 @@ class _WebViewScreenState extends State<WebViewScreen> {
       // 1. CAPTURE CURRENT VIDEO / PAGE URL FROM WEBVIEW
       // ============================================================
 
+      // The page URL is what the extractor works from. The old build fell
+      // back to whatever page happened to be open when it could not find a
+      // <video> element, which is why every browse-started download failed:
+      // homepages and login screens were sent to the server as if they were
+      // videos. Now the page must actually be a video before we ask.
+
       String? currentUrl;
 
       try {
-        currentUrl =
-            await _controller.runJavaScriptReturningResult('''
-        (function() {
-          var videoEl = document.querySelector('video');
+        final result = await _controller.runJavaScriptReturningResult(
+          'window.location.href',
+        );
 
-          if (videoEl &&
-              videoEl.src &&
-              videoEl.src.startsWith('http') &&
-              !videoEl.src.includes('blob:')) {
-            return videoEl.src;
-          }
-
-          var sourceEl = document.querySelector('video source');
-
-          if (sourceEl &&
-              sourceEl.src &&
-              sourceEl.src.startsWith('http')) {
-            return sourceEl.src;
-          }
-
-          var ogVideo =
-              document.querySelector('meta[property="og:video"]');
-
-          if (ogVideo &&
-              ogVideo.content &&
-              ogVideo.content.startsWith('http')) {
-            return ogVideo.content;
-          }
-
-          return window.location.href;
-        })()
-      ''')
-                as String?;
+        currentUrl = result.toString().replaceAll('"', '').trim();
       } catch (e) {
-        debugPrint('⚠️ Could not capture WebView URL: $e');
+        debugPrint('⚠️ Could not read the WebView URL: $e');
       }
 
-      // ============================================================
-      // 2. CLEAN CAPTURED URL
-      // ============================================================
-
-      String? cleanUrl = currentUrl
-          ?.replaceAll('"', '')
-          .replaceAll("'", '')
-          .trim();
-
       debugPrint('==========================================');
-      debugPrint('🎯 Captured WebView URL: $cleanUrl');
+      debugPrint('🎯 Current page: $currentUrl');
       debugPrint('🌐 Platform: ${widget.platformName}');
       debugPrint('🎞️ Quality: $_selectedQuality');
       debugPrint('==========================================');
 
-      // ============================================================
-      // 3. VALIDATE URL
-      // ============================================================
+      if (currentUrl == null || currentUrl.isEmpty) {
+        throw Exception('Could not read the current page. Try again.');
+      }
 
-      if (cleanUrl == null || cleanUrl.isEmpty) {
+      final uri = Uri.tryParse(currentUrl);
+
+      if (uri == null || !(uri.scheme == 'http' || uri.scheme == 'https')) {
+        throw Exception('Open a video before starting the download.');
+      }
+
+      final platform = platformByName(widget.platformName);
+
+      if (platform != null && !platform.isVideoUrl(uri)) {
         throw Exception(
-          'Please open a specific video before starting the download.',
+          'This page is not a video. Open the video you want, then tap '
+          'download again.',
         );
       }
 
-      // ============================================================
-      // GOOGLE / GSTATIC VALIDATION
-      // ============================================================
+      final String cleanUrl = cleanVideoUrl(uri);
 
-      if (cleanUrl.contains('google.com') ||
-          cleanUrl.contains('gstatic.com') ||
-          cleanUrl.contains('/foryou')) {
-        throw Exception(
-          'Please open a specific video before starting the download.',
-        );
-      }
-
-      debugPrint('==========================================');
-      debugPrint('🎯 FINAL EziDownload TARGET URL');
-      debugPrint('🔗 $cleanUrl');
-      debugPrint('🌐 Platform: ${widget.platformName}');
-      debugPrint('🎞️ Quality: $_selectedQuality');
-      debugPrint('==========================================');
+      debugPrint('🎯 FINAL TARGET URL: $cleanUrl');
 
       if (!mounted) return;
 
