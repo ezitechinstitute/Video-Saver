@@ -553,6 +553,50 @@ class DownloadService {
   }
 
   // ============================================================
+  // LOCAL HISTORY
+  // ============================================================
+
+  /// Downloads started on this device, newest first.
+  ///
+  /// Deliberately local. `GET /downloads` is unauthenticated and answers with
+  /// every download the server has ever run, for every user, so it cannot back
+  /// a "my downloads" screen without showing strangers' links.
+  Future<List<Map<String, dynamic>>> localDownloads() => _getCache();
+
+  /// Re-checks anything that had not finished when we last saw it, so the
+  /// history screen does not show a download as stuck forever.
+  Future<List<Map<String, dynamic>>> refreshLocalDownloads() async {
+    final downloads = await _getCache();
+
+    for (final download in downloads) {
+      final status = download['status']?.toString();
+
+      if (status == 'completed' || status == 'failed') continue;
+
+      final id = int.tryParse(download['id']?.toString() ?? '');
+
+      if (id == null) continue;
+
+      try {
+        await getDownload(id);
+      } catch (e) {
+        debugPrint('⚠️ Could not refresh download #$id: $e');
+      }
+    }
+
+    return _getCache();
+  }
+
+  /// Drops one download from the history. The saved video is untouched.
+  Future<void> forget(dynamic id) async {
+    final downloads = await _getCache();
+
+    downloads.removeWhere((item) => item['id'].toString() == id.toString());
+
+    await _saveCache(downloads);
+  }
+
+  // ============================================================
   // CLEAR CACHE
   // ============================================================
 

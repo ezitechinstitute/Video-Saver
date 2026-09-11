@@ -26,7 +26,15 @@ String _friendlyError(Object error, String fallback) {
 class PasteLinkScreen extends StatefulWidget {
   final String platformName;
 
-  const PasteLinkScreen({super.key, required this.platformName});
+  /// Link the screen opens with, when it was reached by sharing a video into
+  /// the app rather than by tapping a platform tile.
+  final String? initialLink;
+
+  const PasteLinkScreen({
+    super.key,
+    required this.platformName,
+    this.initialLink,
+  });
 
   @override
   State<PasteLinkScreen> createState() => _PasteLinkScreenState();
@@ -43,6 +51,17 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
   int _downloadTotal = 0;
 
   String _selectedQuality = '1080p';
+
+  @override
+  void initState() {
+    super.initState();
+
+    final shared = widget.initialLink?.trim();
+
+    if (shared != null && shared.isNotEmpty) {
+      _linkController.text = shared;
+    }
+  }
 
   @override
   void dispose() {

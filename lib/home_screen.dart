@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'downloads_screen.dart';
 import 'how_to_download_screen.dart';
 import 'platforms.dart';
 import 'paste_link_screen.dart';
@@ -52,7 +53,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildTopBar() {
     return Row(
       children: [
-        _GlassIconButton(icon: Icons.menu_rounded, onTap: () {}),
+        _GlassIconButton(
+          icon: Icons.download_done_rounded,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const DownloadsScreen()),
+            );
+          },
+        ),
         const Spacer(),
         _PremiumButton(onTap: () {}),
         const SizedBox(width: 10),

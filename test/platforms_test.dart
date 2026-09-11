@@ -41,7 +41,10 @@ void main() {
         'Facebook',
         'https://www.facebook.com/share/r/1JURa2nzCQ/',
       );
-      expectAccepted('Facebook', 'https://www.facebook.com/watch/?v=1234567890');
+      expectAccepted(
+        'Facebook',
+        'https://www.facebook.com/watch/?v=1234567890',
+      );
       expectAccepted('Facebook', 'https://fb.watch/abc123XY/');
     });
 
