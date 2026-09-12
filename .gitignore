@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Signing keys. key.properties and local.properties are already covered by
+# android/.gitignore; a keystore anywhere in the tree was not.
+*.jks
+*.keystore
