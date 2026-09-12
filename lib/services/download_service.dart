@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -6,6 +7,8 @@ import 'package:gal/gal.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
+
+import 'download_notifier.dart';
 
 class DownloadService {
   DownloadService._();
@@ -153,6 +156,7 @@ class DownloadService {
     int id, {
     Duration interval = const Duration(seconds: 2),
     int maxAttempts = 150,
+    void Function(String status, int progress)? onStatus,
   }) async {
     debugPrint('==========================================');
     debugPrint('⏳ WAITING FOR SERVER DOWNLOAD');
@@ -163,7 +167,12 @@ class DownloadService {
     for (int attempt = 0; attempt < maxAttempts; attempt++) {
       final download = await getDownload(id);
 
-      final status = download['status']?.toString();
+      final status = download['status']?.toString() ?? 'pending';
+
+      onStatus?.call(
+        status,
+        int.tryParse(download['progress']?.toString() ?? '') ?? 0,
+      );
 
       debugPrint(
         '🔄 Attempt ${attempt + 1}/$maxAttempts '
@@ -288,17 +297,21 @@ class DownloadService {
 
       debugPrint('⬇️ Starting video download from server...');
 
+      int lastLoggedPercent = -1;
+
       await _fileDio.download(
         videoUrl,
         filePath,
         onReceiveProgress: (received, total) {
+          // Dio reports every chunk. Logging each one floods logcat and costs
+          // real time on a slow connection, so only whole percents are logged.
           if (total > 0) {
-            final percent = (received / total * 100).toStringAsFixed(0);
+            final percent = (received / total * 100).floor();
 
-            debugPrint(
-              '📱 Phone download progress: $percent% '
-              '($received / $total bytes)',
-            );
+            if (percent != lastLoggedPercent) {
+              lastLoggedPercent = percent;
+              debugPrint('📱 Phone download: $percent% ($received / $total)');
+            }
           }
 
           onProgress?.call(received, total);
@@ -398,57 +411,115 @@ class DownloadService {
     debugPrint('🆔 Download ID: $downloadId');
     debugPrint('==========================================');
 
-    // ----------------------------------------------------------
-    // 1. Wait for Laravel + yt-dlp
-    // ----------------------------------------------------------
+    final notifier = DownloadNotifier.instance;
 
-    final download = await waitForCompletion(downloadId);
+    // Android 13+ will not post anything without this. Deliberately not
+    // awaited: the download must not sit and wait on a permission dialog the
+    // user may never answer. Without the permission it simply runs unseen.
+    unawaited(notifier.requestPermission());
 
-    // ----------------------------------------------------------
-    // 2. Get video URL
-    // ----------------------------------------------------------
-
-    final videoUrl = download['video_url']?.toString();
-
-    debugPrint('🎬 Server video_url: $videoUrl');
-
-    if (videoUrl == null || videoUrl.isEmpty) {
-      throw Exception(
-        'The server completed the download but did not return a video URL.',
-      );
-    }
-
-    // ----------------------------------------------------------
-    // 3. Convert local server URL for phone
-    // ----------------------------------------------------------
-
-    final accessibleVideoUrl = _makeAccessibleUrl(videoUrl);
-
-    debugPrint('==========================================');
-    debugPrint('🌐 ORIGINAL SERVER URL');
-    debugPrint(videoUrl);
-    debugPrint('');
-    debugPrint('📱 PHONE ACCESSIBLE URL');
-    debugPrint(accessibleVideoUrl);
-    debugPrint('==========================================');
-
-    // ----------------------------------------------------------
-    // 4. Download to phone + Gallery
-    // ----------------------------------------------------------
-
-    await downloadToGallery(
-      videoUrl: accessibleVideoUrl,
-      downloadId: downloadId,
-      platform: download['platform']?.toString(),
-      onProgress: onProgress,
+    // Showing the notification is also what keeps the download alive when the
+    // user switches away, so it goes up before any work starts.
+    await notifier.showProgress(
+      title: 'Preparing your video',
+      text: 'Waiting for the server…',
+      force: true,
     );
 
-    debugPrint('==========================================');
-    debugPrint('🏁 COMPLETE DOWNLOAD FLOW FINISHED');
-    debugPrint('🆔 Download ID: $downloadId');
-    debugPrint('==========================================');
+    try {
+      // ----------------------------------------------------------
+      // 1. Wait for the server to produce the file
+      // ----------------------------------------------------------
 
-    return download;
+      final download = await waitForCompletion(
+        downloadId,
+        onStatus: (status, progress) {
+          notifier.showProgress(
+            title: 'Preparing your video',
+            text: status == 'processing'
+                ? 'The server is working on it…'
+                : 'Waiting for the server…',
+            progress: progress > 0 ? progress : null,
+          );
+        },
+      );
+
+      // ----------------------------------------------------------
+      // 2. Get video URL
+      // ----------------------------------------------------------
+
+      final videoUrl = download['video_url']?.toString();
+
+      debugPrint('🎬 Server video_url: $videoUrl');
+
+      if (videoUrl == null || videoUrl.isEmpty) {
+        throw Exception(
+          'The server completed the download but did not return a video URL.',
+        );
+      }
+
+      // ----------------------------------------------------------
+      // 3. Convert local server URL for phone
+      // ----------------------------------------------------------
+
+      final accessibleVideoUrl = _makeAccessibleUrl(videoUrl);
+
+      debugPrint('📱 Phone accessible URL: $accessibleVideoUrl');
+
+      // ----------------------------------------------------------
+      // 4. Download to phone + Gallery
+      // ----------------------------------------------------------
+
+      final platform = download['platform']?.toString();
+      int lastNotifiedPercent = -1;
+
+      await downloadToGallery(
+        videoUrl: accessibleVideoUrl,
+        downloadId: downloadId,
+        platform: platform,
+        onProgress: (received, total) {
+          onProgress?.call(received, total);
+
+          if (total <= 0) return;
+
+          // The notification is a binder call per update, and Dio reports
+          // every chunk, so only whole percents are pushed across.
+          final percent = (received / total * 100).floor();
+
+          if (percent == lastNotifiedPercent) return;
+          lastNotifiedPercent = percent;
+
+          notifier.showProgress(
+            title: 'Saving to your gallery',
+            text: platform == null ? '$percent%' : '$platform • $percent%',
+            progress: percent,
+          );
+        },
+      );
+
+      await notifier.finish(
+        downloadId: downloadId,
+        title: 'Video saved',
+        text: 'Your video is in the EziDownload album in your gallery.',
+        success: true,
+      );
+
+      debugPrint('==========================================');
+      debugPrint('🏁 COMPLETE DOWNLOAD FLOW FINISHED');
+      debugPrint('🆔 Download ID: $downloadId');
+      debugPrint('==========================================');
+
+      return download;
+    } catch (e) {
+      await notifier.finish(
+        downloadId: downloadId,
+        title: 'Download failed',
+        text: e.toString().replaceFirst('Exception: ', ''),
+        success: false,
+      );
+
+      rethrow;
+    }
   }
 
   // ============================================================

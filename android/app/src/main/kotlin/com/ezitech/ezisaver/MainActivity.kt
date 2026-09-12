@@ -1,31 +1,37 @@
 package com.ezitech.ezisaver
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 /**
- * Hands links shared into the app from other apps' share sheets over to Dart.
+ * Bridges two things Dart cannot do on its own:
  *
- * A share can arrive two ways: it launches the app, in which case Dart is not
- * listening yet and the link waits in [pendingLink] until Dart asks for it; or
- * the app is already running, in which case it is pushed straight across.
+ *  - links shared into the app from another app's share sheet, and
+ *  - the download notification, which also keeps the process alive so a
+ *    download survives the user switching away.
  */
 class MainActivity : FlutterActivity() {
 
-    private var channel: MethodChannel? = null
+    private var shareChannel: MethodChannel? = null
 
     /** Link waiting for Dart to start up and collect it. */
     private var pendingLink: String? = null
 
+    private var notificationPermissionResult: MethodChannel.Result? = null
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
-        channel = MethodChannel(
-            flutterEngine.dartExecutor.binaryMessenger,
-            CHANNEL,
-        ).apply {
+        val messenger = flutterEngine.dartExecutor.binaryMessenger
+
+        shareChannel = MethodChannel(messenger, SHARE_CHANNEL).apply {
             setMethodCallHandler { call, result ->
                 when (call.method) {
                     "takeSharedLink" -> {
@@ -37,6 +43,42 @@ class MainActivity : FlutterActivity() {
             }
         }
 
+        MethodChannel(messenger, DOWNLOAD_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "requestPermission" -> requestNotificationPermission(result)
+
+                "show" -> {
+                    DownloadService.show(
+                        applicationContext,
+                        call.argument<String>("title") ?: "Saving video",
+                        call.argument<String>("text").orEmpty(),
+                        call.argument<Int>("progress") ?: -1,
+                    )
+                    result.success(null)
+                }
+
+                "finish" -> {
+                    DownloadService.stop(applicationContext)
+
+                    DownloadNotifications.showResult(
+                        applicationContext,
+                        call.argument<Int>("downloadId") ?: 0,
+                        call.argument<String>("title") ?: "",
+                        call.argument<String>("text").orEmpty(),
+                        call.argument<Boolean>("success") ?: false,
+                    )
+                    result.success(null)
+                }
+
+                "cancel" -> {
+                    DownloadService.stop(applicationContext)
+                    result.success(null)
+                }
+
+                else -> result.notImplemented()
+            }
+        }
+
         linkFrom(intent)?.let { pendingLink = it }
     }
 
@@ -45,7 +87,7 @@ class MainActivity : FlutterActivity() {
         setIntent(intent)
 
         val link = linkFrom(intent) ?: return
-        val openChannel = channel
+        val openChannel = shareChannel
 
         if (openChannel == null) {
             pendingLink = link
@@ -53,6 +95,58 @@ class MainActivity : FlutterActivity() {
             openChannel.invokeMethod("sharedLink", link)
         }
     }
+
+    // ============================================================
+    // NOTIFICATION PERMISSION
+    // ============================================================
+
+    private fun requestNotificationPermission(result: MethodChannel.Result) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            result.success(true)
+            return
+        }
+
+        val granted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.POST_NOTIFICATIONS,
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (granted) {
+            result.success(true)
+            return
+        }
+
+        // Only one request can be in flight; answer any earlier one so Dart is
+        // never left waiting on a future that will not complete.
+        notificationPermissionResult?.success(false)
+        notificationPermissionResult = result
+
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+            NOTIFICATION_PERMISSION_REQUEST,
+        )
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode != NOTIFICATION_PERMISSION_REQUEST) return
+
+        val granted = grantResults.isNotEmpty() &&
+            grantResults[0] == PackageManager.PERMISSION_GRANTED
+
+        notificationPermissionResult?.success(granted)
+        notificationPermissionResult = null
+    }
+
+    // ============================================================
+    // SHARED LINKS
+    // ============================================================
 
     /**
      * The first http(s) URL inside a shared text payload.
@@ -71,7 +165,9 @@ class MainActivity : FlutterActivity() {
     }
 
     companion object {
-        private const val CHANNEL = "com.ezitech.ezisaver/share"
+        private const val SHARE_CHANNEL = "com.ezitech.ezisaver/share"
+        private const val DOWNLOAD_CHANNEL = "com.ezitech.ezisaver/download"
+        private const val NOTIFICATION_PERMISSION_REQUEST = 7301
         private val URL_PATTERN = Regex("""https?://\S+""")
     }
 }

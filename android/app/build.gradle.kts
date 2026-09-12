@@ -53,6 +53,13 @@ android {
     }
 }
 
+dependencies {
+    // NotificationCompat and the permission helpers used by MainActivity and
+    // DownloadNotifications. Present transitively already, declared because
+    // app code compiles against it.
+    implementation("androidx.core:core-ktx:1.13.1")
+}
+
 kotlin {
     compilerOptions {
         jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
