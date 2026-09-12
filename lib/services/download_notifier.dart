@@ -32,6 +32,7 @@ class DownloadNotifier {
   static const Duration _minimumGap = Duration(milliseconds: 600);
 
   DateTime? _lastShownAt;
+  String? _lastTitle;
 
   /// Shows, or updates, the running download.
   ///
@@ -47,11 +48,19 @@ class DownloadNotifier {
     final now = DateTime.now();
     final last = _lastShownAt;
 
-    if (!force && last != null && now.difference(last) < _minimumGap) {
+    // A change of title is the download moving to a new stage — from waiting
+    // on the server to saving the file. Never let throttling swallow that.
+    final changedStage = title != _lastTitle;
+
+    if (!force &&
+        !changedStage &&
+        last != null &&
+        now.difference(last) < _minimumGap) {
       return Future<void>.value();
     }
 
     _lastShownAt = now;
+    _lastTitle = title;
 
     return _invoke<void>('show', {
       'title': title,
@@ -68,6 +77,7 @@ class DownloadNotifier {
     required bool success,
   }) {
     _lastShownAt = null;
+    _lastTitle = null;
 
     return _invoke<void>('finish', {
       'downloadId': downloadId,
@@ -80,6 +90,7 @@ class DownloadNotifier {
   /// Clears the running notification without leaving a result behind.
   Future<void> cancel() {
     _lastShownAt = null;
+    _lastTitle = null;
     return _invoke<void>('cancel');
   }
 
