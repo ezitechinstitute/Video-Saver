@@ -63,28 +63,16 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
         const Spacer(),
-        _PremiumButton(onTap: () {}),
-        const SizedBox(width: 10),
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            _GlassIconButton(
-              icon: Icons.notifications_none_rounded,
-              onTap: () {},
-            ),
-            Positioned(
-              top: 4,
-              right: 4,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF62B8FF),
-                  shape: BoxShape.circle,
-                ),
+        _GlassIconButton(
+          icon: Icons.help_outline_rounded,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const HowToDownloadScreen(),
               ),
-            ),
-          ],
+            );
+          },
         ),
       ],
     );
@@ -290,27 +278,6 @@ class _HomeScreenState extends State<HomeScreen> {
               fontSize: 18,
               fontWeight: FontWeight.w700,
             ),
-          ),
-        ),
-        GestureDetector(
-          onTap: () {},
-          child: Row(
-            children: [
-              Text(
-                'View All',
-                style: GoogleFonts.poppins(
-                  color: const Color(0xFF51B9FF),
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(width: 3),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Color(0xFF51B9FF),
-                size: 19,
-              ),
-            ],
           ),
         ),
       ],
@@ -562,59 +529,6 @@ class _HomeScreenState extends State<HomeScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => PasteLinkScreen(platformName: platform.name),
-      ),
-    );
-  }
-}
-
-class _PremiumButton extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _PremiumButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(19),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            height: 46,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(19),
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF4D7CFF).withValues(alpha: 0.22),
-                  const Color(0xFF6D4AF5).withValues(alpha: 0.20),
-                ],
-              ),
-              border: Border.all(
-                color: const Color(0xFF8EAFFF).withValues(alpha: 0.30),
-              ),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.workspace_premium_rounded,
-                  color: Color(0xFF8FD0FF),
-                  size: 21,
-                ),
-                const SizedBox(width: 7),
-                Text(
-                  'Go Premium',
-                  style: GoogleFonts.poppins(
-                    color: const Color(0xFFE7F3FF),
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

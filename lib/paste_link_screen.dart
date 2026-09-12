@@ -5,23 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'how_to_download_screen.dart';
+import 'error_message.dart';
 import 'platforms.dart';
 import 'services/download_service.dart';
 import 'webview_screen.dart';
-
-/// Turns a thrown error into something worth showing the user, falling back to
-/// [fallback] when the error carries no useful message.
-String _friendlyError(Object error, String fallback) {
-  final message = error
-      .toString()
-      .replaceFirst('Exception: ', '')
-      .replaceFirst('DioException', '')
-      .trim();
-
-  if (message.isEmpty || message.length > 160) return fallback;
-
-  return message;
-}
 
 class PasteLinkScreen extends StatefulWidget {
   final String platformName;
@@ -364,7 +351,7 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  _friendlyError(
+                  friendlyError(
                     e,
                     'We couldn’t download this video. Please check the link and try again.',
                   ),

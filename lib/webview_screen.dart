@@ -4,22 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import 'error_message.dart';
 import 'platforms.dart';
 import 'services/download_service.dart';
-
-/// Turns a thrown error into something worth showing the user, falling back to
-/// [fallback] when the error carries no useful message.
-String _friendlyError(Object error, String fallback) {
-  final message = error
-      .toString()
-      .replaceFirst('Exception: ', '')
-      .replaceFirst('DioException', '')
-      .trim();
-
-  if (message.isEmpty || message.length > 160) return fallback;
-
-  return message;
-}
 
 class WebViewScreen extends StatefulWidget {
   final String url;
@@ -647,7 +634,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  _friendlyError(
+                  friendlyError(
                     e,
                     'We couldn’t save the video to your Gallery. Please try again.',
                   ),

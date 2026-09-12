@@ -96,59 +96,10 @@ class DownloadService {
     }
   }
 
-  // ============================================================
-  // GET ALL DOWNLOADS
-  // ============================================================
-
-  Future<List<Map<String, dynamic>>> getDownloads({
-    bool refresh = false,
-  }) async {
-    try {
-      if (!refresh) {
-        final cachedDownloads = await _getCache();
-
-        if (cachedDownloads.isNotEmpty) {
-          debugPrint(
-            '📦 Returning ${cachedDownloads.length} downloads from local cache.',
-          );
-          return cachedDownloads;
-        }
-      }
-
-      debugPrint('📡 Fetching downloads from server...');
-
-      final response = await _dio.get('/downloads');
-
-      debugPrint('✅ GET DOWNLOADS SUCCESS');
-      debugPrint('📡 Status Code: ${response.statusCode}');
-
-      final List<dynamic> list = response.data['data'];
-
-      final downloads = list
-          .map((item) => Map<String, dynamic>.from(item))
-          .toList();
-
-      debugPrint('📦 Server returned ${downloads.length} downloads.');
-
-      await _saveCache(downloads);
-
-      return downloads;
-    } on DioException catch (e) {
-      debugPrint('❌ GET DOWNLOADS ERROR: ${e.message}');
-      debugPrint('❌ Response: ${e.response?.data}');
-
-      final cachedDownloads = await _getCache();
-
-      if (cachedDownloads.isNotEmpty) {
-        debugPrint('📦 Using cached downloads because API failed.');
-        return cachedDownloads;
-      }
-
-      throw Exception(
-        e.response?.data?['message'] ?? 'Unable to load downloads.',
-      );
-    }
-  }
+  // There is deliberately no "fetch every download" call here. `GET /downloads`
+  // is unauthenticated and answers with every download the server has ever run,
+  // for every user, so it can only ever leak other people's links. History is
+  // kept per device, in the local cache below.
 
   // ============================================================
   // GET SINGLE DOWNLOAD
@@ -253,9 +204,33 @@ class DownloadService {
   // DOWNLOAD VIDEO TO PHONE + SAVE TO GALLERY
   // ============================================================
 
+  /// Name the saved video carries in the gallery.
+  ///
+  /// The server never fills in `title` — it is null on every record — so the
+  /// name is built from what we do know. Anything is better than the bare row
+  /// id the old build used, which told the user nothing.
+  String _fileNameFor(int downloadId, [String? platform]) {
+    final now = DateTime.now();
+
+    String two(int n) => n.toString().padLeft(2, '0');
+
+    final stamp =
+        '${now.year}${two(now.month)}${two(now.day)}_'
+        '${two(now.hour)}${two(now.minute)}${two(now.second)}';
+
+    final source = (platform ?? '')
+        .replaceAll(RegExp(r'[^A-Za-z0-9]'), '')
+        .trim();
+
+    final middle = source.isEmpty ? '' : '${source}_';
+
+    return 'VideoSaver_$middle${stamp}_$downloadId.mp4';
+  }
+
   Future<void> downloadToGallery({
     required String videoUrl,
     required int downloadId,
+    String? platform,
     void Function(int received, int total)? onProgress,
   }) async {
     try {
@@ -295,7 +270,8 @@ class DownloadService {
 
       debugPrint('📂 Temporary directory: ${directory.path}');
 
-      final filePath = '${directory.path}/ezidownload_$downloadId.mp4';
+      final filePath =
+          '${directory.path}/${_fileNameFor(downloadId, platform)}';
 
       debugPrint('📄 Temporary video path: $filePath');
 
@@ -463,6 +439,7 @@ class DownloadService {
     await downloadToGallery(
       videoUrl: accessibleVideoUrl,
       downloadId: downloadId,
+      platform: download['platform']?.toString(),
       onProgress: onProgress,
     );
 
