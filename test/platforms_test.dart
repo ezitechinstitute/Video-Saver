@@ -6,6 +6,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:ezi_download/platform_glyphs.dart';
 import 'package:ezi_download/platforms.dart';
 
 void expectAccepted(String platformName, String url) {
@@ -140,6 +141,28 @@ void main() {
     test('leaves a clean link alone', () {
       const url = 'https://vm.tiktok.com/ZSVcQJKB9/';
       expect(cleanVideoUrl(Uri.parse(url)), url);
+    });
+  });
+
+  group('tiles', () {
+    test('every platform has its own glyph', () {
+      final glyphs = kPlatforms.map((p) => p.glyph).toList();
+
+      expect(
+        glyphs.toSet().length,
+        glyphs.length,
+        reason: 'two platforms would be indistinguishable on the home grid',
+      );
+    });
+
+    test('every platform has brand colours to sit on', () {
+      for (final platform in kPlatforms) {
+        expect(
+          platform.gradient.length,
+          greaterThanOrEqualTo(2),
+          reason: '${platform.name} needs at least two stops for a gradient',
+        );
+      }
     });
   });
 }

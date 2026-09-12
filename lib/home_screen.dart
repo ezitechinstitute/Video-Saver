@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'downloads_screen.dart';
 import 'how_to_download_screen.dart';
+import 'platform_glyphs.dart';
 import 'platforms.dart';
 import 'paste_link_screen.dart';
 
@@ -354,7 +355,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                   ),
-                  child: Icon(platform.icon, color: Colors.white, size: 28),
+                  child: Center(
+                    child: PlatformGlyphIcon(glyph: platform.glyph, size: 27),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Padding(

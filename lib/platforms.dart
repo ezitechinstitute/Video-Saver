@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'platform_glyphs.dart';
+
 /// A source the app can pull videos from.
 ///
 /// YouTube is deliberately absent. Downloading YouTube content violates the
@@ -8,7 +10,10 @@ import 'package:flutter/material.dart';
 /// back — the store listing and screenshots must stay free of it too.
 class VideoPlatform {
   final String name;
-  final IconData icon;
+
+  /// The mark drawn on the tile. Custom shapes rather than the platforms' own
+  /// logos, which are theirs.
+  final PlatformGlyph glyph;
 
   /// Brand colours for the tile, top-left to bottom-right.
   final List<Color> gradient;
@@ -27,7 +32,7 @@ class VideoPlatform {
 
   const VideoPlatform({
     required this.name,
-    required this.icon,
+    required this.glyph,
     required this.gradient,
     required this.browseUrl,
     this.hosts = const [],
@@ -64,7 +69,7 @@ class VideoPlatform {
 const List<VideoPlatform> kPlatforms = [
   VideoPlatform(
     name: 'TikTok',
-    icon: Icons.music_note_rounded,
+    glyph: PlatformGlyph.equaliser,
     gradient: [Color(0xFF25F4EE), Color(0xFFFE2C55)],
     browseUrl: 'https://www.tiktok.com/',
     hosts: ['tiktok.com'],
@@ -78,7 +83,7 @@ const List<VideoPlatform> kPlatforms = [
   ),
   VideoPlatform(
     name: 'Instagram',
-    icon: Icons.camera_alt_rounded,
+    glyph: PlatformGlyph.reel,
     gradient: [Color(0xFFF9CE34), Color(0xFFEE2A7B), Color(0xFF6228D7)],
     browseUrl: 'https://www.instagram.com',
     hosts: ['instagram.com', 'instagr.am'],
@@ -86,7 +91,7 @@ const List<VideoPlatform> kPlatforms = [
   ),
   VideoPlatform(
     name: 'Facebook',
-    icon: Icons.groups_rounded,
+    glyph: PlatformGlyph.person,
     gradient: [Color(0xFF1877F2), Color(0xFF0A53BE)],
     browseUrl: 'https://www.facebook.com',
     hosts: ['facebook.com', 'fb.watch', 'fb.com'],
@@ -100,7 +105,7 @@ const List<VideoPlatform> kPlatforms = [
   ),
   VideoPlatform(
     name: 'Twitter / X',
-    icon: Icons.forum_rounded,
+    glyph: PlatformGlyph.post,
     gradient: [Color(0xFF3A4045), Color(0xFF0B0B0C)],
     browseUrl: 'https://x.com',
     hosts: ['x.com', 'twitter.com'],
@@ -110,7 +115,7 @@ const List<VideoPlatform> kPlatforms = [
   ),
   VideoPlatform(
     name: 'Dailymotion',
-    icon: Icons.play_circle_fill_rounded,
+    glyph: PlatformGlyph.playCircle,
     gradient: [Color(0xFF0EF0A0), Color(0xFF00B39B)],
     browseUrl: 'https://www.dailymotion.com',
     hosts: ['dailymotion.com', 'dai.ly'],
@@ -118,7 +123,7 @@ const List<VideoPlatform> kPlatforms = [
   ),
   VideoPlatform(
     name: 'Vimeo',
-    icon: Icons.videocam_rounded,
+    glyph: PlatformGlyph.film,
     gradient: [Color(0xFF1AB7EA), Color(0xFF0D6E90)],
     browseUrl: 'https://vimeo.com',
     hosts: ['vimeo.com'],
@@ -130,7 +135,7 @@ const List<VideoPlatform> kPlatforms = [
   ),
   VideoPlatform(
     name: 'More',
-    icon: Icons.apps_rounded,
+    glyph: PlatformGlyph.grid,
     gradient: [Color(0xFF6F7CFF), Color(0xFF9B6DFF)],
     browseUrl: '',
   ),

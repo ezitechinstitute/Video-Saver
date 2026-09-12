@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'platform_glyphs.dart';
 import 'platforms.dart';
 import 'services/download_service.dart';
 
@@ -430,18 +431,20 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
           ),
         ),
         child: thumbnail == null || thumbnail.isEmpty
-            ? Icon(
-                platform?.icon ?? Icons.movie_rounded,
-                color: Colors.white,
-                size: 26,
+            ? Center(
+                child: PlatformGlyphIcon(
+                  glyph: platform?.glyph ?? PlatformGlyph.film,
+                  size: 25,
+                ),
               )
             : Image.network(
                 thumbnail,
                 fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => Icon(
-                  platform?.icon ?? Icons.movie_rounded,
-                  color: Colors.white,
-                  size: 26,
+                errorBuilder: (_, _, _) => Center(
+                  child: PlatformGlyphIcon(
+                    glyph: platform?.glyph ?? PlatformGlyph.film,
+                    size: 25,
+                  ),
                 ),
               ),
       ),

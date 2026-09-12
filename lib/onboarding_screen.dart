@@ -27,7 +27,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       'image': 'assets/images/onboarding1.png',
       'title': 'Welcome to VideoSaver',
       'description':
-          'Your all-in-one place to browse, download and enjoy your favorite media.',
+          'Your all in one place to browse, download and enjoy your favorite media.',
     },
     {
       'image': 'assets/images/onboarding3.png',
