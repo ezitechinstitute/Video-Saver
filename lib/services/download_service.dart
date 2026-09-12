@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -6,6 +7,8 @@ import 'package:gal/gal.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
+
+import 'download_notifier.dart';
 
 class DownloadService {
   DownloadService._();
@@ -21,6 +24,22 @@ class DownloadService {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
+    ),
+  );
+
+  /// Separate client for fetching the actual video file.
+  ///
+  /// The API client sends JSON headers and uses a short receive timeout, both
+  /// of which break large binary downloads: `Accept: application/json` can make
+  /// the server answer with JSON instead of the file, and a 30s receive timeout
+  /// aborts slow transfers.
+  final Dio _fileDio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(minutes: 10),
+      headers: {'Accept': '*/*'},
+      followRedirects: true,
+      responseType: ResponseType.stream,
     ),
   );
 
@@ -80,59 +99,10 @@ class DownloadService {
     }
   }
 
-  // ============================================================
-  // GET ALL DOWNLOADS
-  // ============================================================
-
-  Future<List<Map<String, dynamic>>> getDownloads({
-    bool refresh = false,
-  }) async {
-    try {
-      if (!refresh) {
-        final cachedDownloads = await _getCache();
-
-        if (cachedDownloads.isNotEmpty) {
-          debugPrint(
-            '📦 Returning ${cachedDownloads.length} downloads from local cache.',
-          );
-          return cachedDownloads;
-        }
-      }
-
-      debugPrint('📡 Fetching downloads from server...');
-
-      final response = await _dio.get('/downloads');
-
-      debugPrint('✅ GET DOWNLOADS SUCCESS');
-      debugPrint('📡 Status Code: ${response.statusCode}');
-
-      final List<dynamic> list = response.data['data'];
-
-      final downloads = list
-          .map((item) => Map<String, dynamic>.from(item))
-          .toList();
-
-      debugPrint('📦 Server returned ${downloads.length} downloads.');
-
-      await _saveCache(downloads);
-
-      return downloads;
-    } on DioException catch (e) {
-      debugPrint('❌ GET DOWNLOADS ERROR: ${e.message}');
-      debugPrint('❌ Response: ${e.response?.data}');
-
-      final cachedDownloads = await _getCache();
-
-      if (cachedDownloads.isNotEmpty) {
-        debugPrint('📦 Using cached downloads because API failed.');
-        return cachedDownloads;
-      }
-
-      throw Exception(
-        e.response?.data?['message'] ?? 'Unable to load downloads.',
-      );
-    }
-  }
+  // There is deliberately no "fetch every download" call here. `GET /downloads`
+  // is unauthenticated and answers with every download the server has ever run,
+  // for every user, so it can only ever leak other people's links. History is
+  // kept per device, in the local cache below.
 
   // ============================================================
   // GET SINGLE DOWNLOAD
@@ -186,6 +156,7 @@ class DownloadService {
     int id, {
     Duration interval = const Duration(seconds: 2),
     int maxAttempts = 150,
+    void Function(String status, int progress)? onStatus,
   }) async {
     debugPrint('==========================================');
     debugPrint('⏳ WAITING FOR SERVER DOWNLOAD');
@@ -196,7 +167,12 @@ class DownloadService {
     for (int attempt = 0; attempt < maxAttempts; attempt++) {
       final download = await getDownload(id);
 
-      final status = download['status']?.toString();
+      final status = download['status']?.toString() ?? 'pending';
+
+      onStatus?.call(
+        status,
+        int.tryParse(download['progress']?.toString() ?? '') ?? 0,
+      );
 
       debugPrint(
         '🔄 Attempt ${attempt + 1}/$maxAttempts '
@@ -237,9 +213,33 @@ class DownloadService {
   // DOWNLOAD VIDEO TO PHONE + SAVE TO GALLERY
   // ============================================================
 
+  /// Name the saved video carries in the gallery.
+  ///
+  /// The server never fills in `title` — it is null on every record — so the
+  /// name is built from what we do know. Anything is better than the bare row
+  /// id the old build used, which told the user nothing.
+  String _fileNameFor(int downloadId, [String? platform]) {
+    final now = DateTime.now();
+
+    String two(int n) => n.toString().padLeft(2, '0');
+
+    final stamp =
+        '${now.year}${two(now.month)}${two(now.day)}_'
+        '${two(now.hour)}${two(now.minute)}${two(now.second)}';
+
+    final source = (platform ?? '')
+        .replaceAll(RegExp(r'[^A-Za-z0-9]'), '')
+        .trim();
+
+    final middle = source.isEmpty ? '' : '${source}_';
+
+    return 'VideoSaver_$middle${stamp}_$downloadId.mp4';
+  }
+
   Future<void> downloadToGallery({
     required String videoUrl,
     required int downloadId,
+    String? platform,
     void Function(int received, int total)? onProgress,
   }) async {
     try {
@@ -279,7 +279,8 @@ class DownloadService {
 
       debugPrint('📂 Temporary directory: ${directory.path}');
 
-      final filePath = '${directory.path}/ezidownload_$downloadId.mp4';
+      final filePath =
+          '${directory.path}/${_fileNameFor(downloadId, platform)}';
 
       debugPrint('📄 Temporary video path: $filePath');
 
@@ -296,17 +297,21 @@ class DownloadService {
 
       debugPrint('⬇️ Starting video download from server...');
 
-      await _dio.download(
+      int lastLoggedPercent = -1;
+
+      await _fileDio.download(
         videoUrl,
         filePath,
         onReceiveProgress: (received, total) {
+          // Dio reports every chunk. Logging each one floods logcat and costs
+          // real time on a slow connection, so only whole percents are logged.
           if (total > 0) {
-            final percent = (received / total * 100).toStringAsFixed(0);
+            final percent = (received / total * 100).floor();
 
-            debugPrint(
-              '📱 Phone download progress: $percent% '
-              '($received / $total bytes)',
-            );
+            if (percent != lastLoggedPercent) {
+              lastLoggedPercent = percent;
+              debugPrint('📱 Phone download: $percent% ($received / $total)');
+            }
           }
 
           onProgress?.call(received, total);
@@ -406,56 +411,115 @@ class DownloadService {
     debugPrint('🆔 Download ID: $downloadId');
     debugPrint('==========================================');
 
-    // ----------------------------------------------------------
-    // 1. Wait for Laravel + yt-dlp
-    // ----------------------------------------------------------
+    final notifier = DownloadNotifier.instance;
 
-    final download = await waitForCompletion(downloadId);
+    // Android 13+ will not post anything without this. Deliberately not
+    // awaited: the download must not sit and wait on a permission dialog the
+    // user may never answer. Without the permission it simply runs unseen.
+    unawaited(notifier.requestPermission());
 
-    // ----------------------------------------------------------
-    // 2. Get video URL
-    // ----------------------------------------------------------
-
-    final videoUrl = download['video_url']?.toString();
-
-    debugPrint('🎬 Server video_url: $videoUrl');
-
-    if (videoUrl == null || videoUrl.isEmpty) {
-      throw Exception(
-        'The server completed the download but did not return a video URL.',
-      );
-    }
-
-    // ----------------------------------------------------------
-    // 3. Convert local server URL for phone
-    // ----------------------------------------------------------
-
-    final accessibleVideoUrl = _makeAccessibleUrl(videoUrl);
-
-    debugPrint('==========================================');
-    debugPrint('🌐 ORIGINAL SERVER URL');
-    debugPrint(videoUrl);
-    debugPrint('');
-    debugPrint('📱 PHONE ACCESSIBLE URL');
-    debugPrint(accessibleVideoUrl);
-    debugPrint('==========================================');
-
-    // ----------------------------------------------------------
-    // 4. Download to phone + Gallery
-    // ----------------------------------------------------------
-
-    await downloadToGallery(
-      videoUrl: accessibleVideoUrl,
-      downloadId: downloadId,
-      onProgress: onProgress,
+    // Showing the notification is also what keeps the download alive when the
+    // user switches away, so it goes up before any work starts.
+    await notifier.showProgress(
+      title: 'Preparing your video',
+      text: 'Waiting for the server…',
+      force: true,
     );
 
-    debugPrint('==========================================');
-    debugPrint('🏁 COMPLETE DOWNLOAD FLOW FINISHED');
-    debugPrint('🆔 Download ID: $downloadId');
-    debugPrint('==========================================');
+    try {
+      // ----------------------------------------------------------
+      // 1. Wait for the server to produce the file
+      // ----------------------------------------------------------
 
-    return download;
+      final download = await waitForCompletion(
+        downloadId,
+        onStatus: (status, progress) {
+          notifier.showProgress(
+            title: 'Preparing your video',
+            text: status == 'processing'
+                ? 'The server is working on it…'
+                : 'Waiting for the server…',
+            progress: progress > 0 ? progress : null,
+          );
+        },
+      );
+
+      // ----------------------------------------------------------
+      // 2. Get video URL
+      // ----------------------------------------------------------
+
+      final videoUrl = download['video_url']?.toString();
+
+      debugPrint('🎬 Server video_url: $videoUrl');
+
+      if (videoUrl == null || videoUrl.isEmpty) {
+        throw Exception(
+          'The server completed the download but did not return a video URL.',
+        );
+      }
+
+      // ----------------------------------------------------------
+      // 3. Convert local server URL for phone
+      // ----------------------------------------------------------
+
+      final accessibleVideoUrl = _makeAccessibleUrl(videoUrl);
+
+      debugPrint('📱 Phone accessible URL: $accessibleVideoUrl');
+
+      // ----------------------------------------------------------
+      // 4. Download to phone + Gallery
+      // ----------------------------------------------------------
+
+      final platform = download['platform']?.toString();
+      int lastNotifiedPercent = -1;
+
+      await downloadToGallery(
+        videoUrl: accessibleVideoUrl,
+        downloadId: downloadId,
+        platform: platform,
+        onProgress: (received, total) {
+          onProgress?.call(received, total);
+
+          if (total <= 0) return;
+
+          // The notification is a binder call per update, and Dio reports
+          // every chunk, so only whole percents are pushed across.
+          final percent = (received / total * 100).floor();
+
+          if (percent == lastNotifiedPercent) return;
+          lastNotifiedPercent = percent;
+
+          notifier.showProgress(
+            title: 'Saving to your gallery',
+            text: platform == null ? '$percent%' : '$platform • $percent%',
+            progress: percent,
+          );
+        },
+      );
+
+      await notifier.finish(
+        downloadId: downloadId,
+        title: 'Video saved',
+        text: 'Your video is in the EziDownload album in your gallery.',
+        success: true,
+      );
+
+      debugPrint('==========================================');
+      debugPrint('🏁 COMPLETE DOWNLOAD FLOW FINISHED');
+      debugPrint('🆔 Download ID: $downloadId');
+      debugPrint('==========================================');
+
+      return download;
+    } catch (e) {
+      await notifier.finish(
+        downloadId: downloadId,
+        title: 'Download failed',
+        text: e.toString().replaceFirst('Exception: ', ''),
+        success: false,
+      );
+
+      rethrow;
+    }
   }
 
   // ============================================================
@@ -532,6 +596,50 @@ class DownloadService {
     } else {
       downloads.insert(0, download);
     }
+
+    await _saveCache(downloads);
+  }
+
+  // ============================================================
+  // LOCAL HISTORY
+  // ============================================================
+
+  /// Downloads started on this device, newest first.
+  ///
+  /// Deliberately local. `GET /downloads` is unauthenticated and answers with
+  /// every download the server has ever run, for every user, so it cannot back
+  /// a "my downloads" screen without showing strangers' links.
+  Future<List<Map<String, dynamic>>> localDownloads() => _getCache();
+
+  /// Re-checks anything that had not finished when we last saw it, so the
+  /// history screen does not show a download as stuck forever.
+  Future<List<Map<String, dynamic>>> refreshLocalDownloads() async {
+    final downloads = await _getCache();
+
+    for (final download in downloads) {
+      final status = download['status']?.toString();
+
+      if (status == 'completed' || status == 'failed') continue;
+
+      final id = int.tryParse(download['id']?.toString() ?? '');
+
+      if (id == null) continue;
+
+      try {
+        await getDownload(id);
+      } catch (e) {
+        debugPrint('⚠️ Could not refresh download #$id: $e');
+      }
+    }
+
+    return _getCache();
+  }
+
+  /// Drops one download from the history. The saved video is untouched.
+  Future<void> forget(dynamic id) async {
+    final downloads = await _getCache();
+
+    downloads.removeWhere((item) => item['id'].toString() == id.toString());
 
     await _saveCache(downloads);
   }

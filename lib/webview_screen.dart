@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import 'error_message.dart';
+import 'platforms.dart';
 import 'services/download_service.dart';
 
 class WebViewScreen extends StatefulWidget {
@@ -394,89 +396,52 @@ class _WebViewScreenState extends State<WebViewScreen> {
       // 1. CAPTURE CURRENT VIDEO / PAGE URL FROM WEBVIEW
       // ============================================================
 
+      // The page URL is what the extractor works from. The old build fell
+      // back to whatever page happened to be open when it could not find a
+      // <video> element, which is why every browse-started download failed:
+      // homepages and login screens were sent to the server as if they were
+      // videos. Now the page must actually be a video before we ask.
+
       String? currentUrl;
 
       try {
-        currentUrl =
-            await _controller.runJavaScriptReturningResult('''
-        (function() {
-          var videoEl = document.querySelector('video');
+        final result = await _controller.runJavaScriptReturningResult(
+          'window.location.href',
+        );
 
-          if (videoEl &&
-              videoEl.src &&
-              videoEl.src.startsWith('http') &&
-              !videoEl.src.includes('blob:')) {
-            return videoEl.src;
-          }
-
-          var sourceEl = document.querySelector('video source');
-
-          if (sourceEl &&
-              sourceEl.src &&
-              sourceEl.src.startsWith('http')) {
-            return sourceEl.src;
-          }
-
-          var ogVideo =
-              document.querySelector('meta[property="og:video"]');
-
-          if (ogVideo &&
-              ogVideo.content &&
-              ogVideo.content.startsWith('http')) {
-            return ogVideo.content;
-          }
-
-          return window.location.href;
-        })()
-      ''')
-                as String?;
+        currentUrl = result.toString().replaceAll('"', '').trim();
       } catch (e) {
-        debugPrint('⚠️ Could not capture WebView URL: $e');
+        debugPrint('⚠️ Could not read the WebView URL: $e');
       }
 
-      // ============================================================
-      // 2. CLEAN CAPTURED URL
-      // ============================================================
-
-      String? cleanUrl = currentUrl
-          ?.replaceAll('"', '')
-          .replaceAll("'", '')
-          .trim();
-
       debugPrint('==========================================');
-      debugPrint('🎯 Captured WebView URL: $cleanUrl');
+      debugPrint('🎯 Current page: $currentUrl');
       debugPrint('🌐 Platform: ${widget.platformName}');
       debugPrint('🎞️ Quality: $_selectedQuality');
       debugPrint('==========================================');
 
-      // ============================================================
-      // 3. VALIDATE URL
-      // ============================================================
+      if (currentUrl == null || currentUrl.isEmpty) {
+        throw Exception('Could not read the current page. Try again.');
+      }
 
-      if (cleanUrl == null || cleanUrl.isEmpty) {
+      final uri = Uri.tryParse(currentUrl);
+
+      if (uri == null || !(uri.scheme == 'http' || uri.scheme == 'https')) {
+        throw Exception('Open a video before starting the download.');
+      }
+
+      final platform = platformByName(widget.platformName);
+
+      if (platform != null && !platform.isVideoUrl(uri)) {
         throw Exception(
-          'Please open a specific video before starting the download.',
+          'This page is not a video. Open the video you want, then tap '
+          'download again.',
         );
       }
 
-      // ============================================================
-      // GOOGLE / GSTATIC VALIDATION
-      // ============================================================
+      final String cleanUrl = cleanVideoUrl(uri);
 
-      if (cleanUrl.contains('google.com') ||
-          cleanUrl.contains('gstatic.com') ||
-          cleanUrl.contains('/foryou')) {
-        throw Exception(
-          'Please open a specific video before starting the download.',
-        );
-      }
-
-      debugPrint('==========================================');
-      debugPrint('🎯 FINAL EziDownload TARGET URL');
-      debugPrint('🔗 $cleanUrl');
-      debugPrint('🌐 Platform: ${widget.platformName}');
-      debugPrint('🎞️ Quality: $_selectedQuality');
-      debugPrint('==========================================');
+      debugPrint('🎯 FINAL TARGET URL: $cleanUrl');
 
       if (!mounted) return;
 
@@ -669,7 +634,10 @@ class _WebViewScreenState extends State<WebViewScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'We couldn’t save the video to your Gallery. Please try again.',
+                  friendlyError(
+                    e,
+                    'We couldn’t save the video to your Gallery. Please try again.',
+                  ),
                   style: GoogleFonts.poppins(color: Colors.white, fontSize: 11),
                 ),
               ),
@@ -686,62 +654,74 @@ class _WebViewScreenState extends State<WebViewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF07132D),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            const _WebViewBackground(),
+    return PopScope(
+      // Keep the system back button consistent with the in-app back button:
+      // navigate the WebView history first, and never leave mid-download.
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop || _isDownloading) return;
 
-            Column(
-              children: [
-                _buildTopBar(),
+        await _goBack();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF07132D),
+        body: SafeArea(
+          child: Stack(
+            children: [
+              const _WebViewBackground(),
 
-                Expanded(
-                  child: Stack(
-                    children: [
-                      ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(18),
+              Column(
+                children: [
+                  _buildTopBar(),
+
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(18),
+                          ),
+                          child: WebViewWidget(controller: _controller),
                         ),
-                        child: WebViewWidget(controller: _controller),
-                      ),
 
-                      if (_isLoading)
-                        Positioned(
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          child: LinearProgressIndicator(
-                            value: _progress == 100 ? null : _progress / 100,
-                            minHeight: 3,
-                            backgroundColor: const Color(0xFF172746),
-                            valueColor: const AlwaysStoppedAnimation<Color>(
-                              Color(0xFF45C7FF),
+                        if (_isLoading)
+                          Positioned(
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            child: LinearProgressIndicator(
+                              value: _progress == 100 ? null : _progress / 100,
+                              minHeight: 3,
+                              backgroundColor: const Color(0xFF172746),
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                Color(0xFF45C7FF),
+                              ),
                             ),
                           ),
-                        ),
 
-                      if (_isDownloading)
-                        Positioned(
-                          left: 15,
-                          right: 15,
-                          bottom: 78,
-                          child: _buildDownloadProgressPanel(),
-                        ),
+                        if (_isDownloading)
+                          Positioned(
+                            left: 15,
+                            right: 15,
+                            bottom: 78,
+                            child: _buildDownloadProgressPanel(),
+                          ),
 
-                      if (!widget.platformName.toLowerCase().contains('google'))
-                        Positioned(
-                          right: 17,
-                          bottom: 17,
-                          child: _buildFloatingDownloadButton(),
-                        ),
-                    ],
+                        if (!widget.platformName.toLowerCase().contains(
+                          'google',
+                        ))
+                          Positioned(
+                            right: 17,
+                            bottom: 17,
+                            child: _buildFloatingDownloadButton(),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

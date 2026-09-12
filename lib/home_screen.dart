@@ -3,8 +3,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'downloads_screen.dart';
 import 'how_to_download_screen.dart';
-import 'webview_screen.dart';
+import 'platforms.dart';
 import 'paste_link_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -15,45 +16,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final List<Map<String, dynamic>> platforms = [
-    {
-      'name': 'TikTok',
-      'icon': Icons.audiotrack_rounded,
-      'color': const Color(0xFF25F4EE),
-      'url': 'https://www.tiktok.com/',
-    },
-    {
-      'name': 'Instagram',
-      'icon': Icons.photo_library_rounded,
-      'color': const Color(0xFFFF4F9A),
-      'url': 'https://www.instagram.com',
-    },
-    {
-      'name': 'Facebook',
-      'icon': Icons.groups_rounded,
-      'color': const Color(0xFF1877F2),
-      'url': 'https://www.facebook.com',
-    },
-    {
-      'name': 'Twitter / X',
-      'icon': Icons.forum_rounded,
-      'color': const Color(0xFFE6F2FF),
-      'url': 'https://x.com',
-    },
-    {
-      'name': 'Vimeo',
-      'icon': Icons.video_collection_rounded,
-      'color': const Color(0xFF1AB7EA),
-      'url': 'https://vimeo.com',
-    },
-    {
-      'name': 'More',
-      'icon': Icons.apps_rounded,
-      'color': const Color(0xFF6F7CFF),
-      'url': '',
-    },
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -91,30 +53,26 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildTopBar() {
     return Row(
       children: [
-        _GlassIconButton(icon: Icons.menu_rounded, onTap: () {}),
+        _GlassIconButton(
+          icon: Icons.download_done_rounded,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const DownloadsScreen()),
+            );
+          },
+        ),
         const Spacer(),
-        _PremiumButton(onTap: () {}),
-        const SizedBox(width: 10),
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            _GlassIconButton(
-              icon: Icons.notifications_none_rounded,
-              onTap: () {},
-            ),
-            Positioned(
-              top: 4,
-              right: 4,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF62B8FF),
-                  shape: BoxShape.circle,
-                ),
+        _GlassIconButton(
+          icon: Icons.help_outline_rounded,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const HowToDownloadScreen(),
               ),
-            ),
-          ],
+            );
+          },
         ),
       ],
     );
@@ -322,27 +280,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
-        GestureDetector(
-          onTap: () {},
-          child: Row(
-            children: [
-              Text(
-                'View All',
-                style: GoogleFonts.poppins(
-                  color: const Color(0xFF51B9FF),
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(width: 3),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Color(0xFF51B9FF),
-                size: 19,
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -351,7 +288,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: platforms.length,
+      itemCount: kPlatforms.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
         crossAxisSpacing: 9,
@@ -359,26 +296,16 @@ class _HomeScreenState extends State<HomeScreen> {
         childAspectRatio: 0.68,
       ),
       itemBuilder: (context, index) {
-        final platform = platforms[index];
-
-        return _buildPlatformCard(
-          name: platform['name'],
-          icon: platform['icon'],
-          color: platform['color'],
-          url: platform['url'],
-        );
+        return _buildPlatformCard(kPlatforms[index]);
       },
     );
   }
 
-  Widget _buildPlatformCard({
-    required String name,
-    required IconData icon,
-    required Color color,
-    required String url,
-  }) {
+  Widget _buildPlatformCard(VideoPlatform platform) {
+    final color = platform.accent;
+
     return GestureDetector(
-      onTap: () => _openPlatform(url, name),
+      onTap: () => _openPlatform(platform),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(19),
         child: BackdropFilter(
@@ -412,25 +339,28 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: 51,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    gradient: const LinearGradient(
+                    gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xFF43C7FF), Color(0xFF246AF2)],
+                      colors: platform.gradient,
                     ),
                     border: Border.all(
                       color: Colors.white.withValues(alpha: 0.17),
                     ),
                     boxShadow: [
-                      BoxShadow(color: Color(0xFF42B8FF), blurRadius: 15),
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.55),
+                        blurRadius: 15,
+                      ),
                     ],
                   ),
-                  child: Icon(icon, color: Colors.white, size: 28),
+                  child: Icon(platform.icon, color: Colors.white, size: 28),
                 ),
                 const SizedBox(height: 8),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 2),
                   child: Text(
-                    name,
+                    platform.name,
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -573,8 +503,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _openPlatform(String url, String platformName) async {
-    if (url.isEmpty) {
+  Future<void> _openPlatform(VideoPlatform platform) async {
+    if (!platform.canBrowse) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text(
@@ -591,76 +521,14 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    if (platformName == 'TikTok' ||
-        platformName == 'Instagram' ||
-        platformName == 'Facebook') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => PasteLinkScreen(platformName: platformName),
-        ),
-      );
-      return;
-    }
-
+    // Every platform opens the paste screen first. Downloads started from a
+    // pasted link succeed far more often than ones started from whatever page
+    // the in-app browser happened to be showing; the paste screen still offers
+    // a Browse button for people who want to find the video in the app.
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            WebViewScreen(url: url, platformName: platformName),
-      ),
-    );
-  }
-}
-
-class _PremiumButton extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _PremiumButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(19),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            height: 46,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(19),
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF4D7CFF).withValues(alpha: 0.22),
-                  const Color(0xFF6D4AF5).withValues(alpha: 0.20),
-                ],
-              ),
-              border: Border.all(
-                color: const Color(0xFF8EAFFF).withValues(alpha: 0.30),
-              ),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.workspace_premium_rounded,
-                  color: Color(0xFF8FD0FF),
-                  size: 21,
-                ),
-                const SizedBox(width: 7),
-                Text(
-                  'Go Premium',
-                  style: GoogleFonts.poppins(
-                    color: const Color(0xFFE7F3FF),
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        builder: (context) => PasteLinkScreen(platformName: platform.name),
       ),
     );
   }

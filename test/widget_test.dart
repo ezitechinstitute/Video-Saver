@@ -1,30 +1,62 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// Smoke tests for the VideoSaver app shell.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:ezi_download/downloads_screen.dart';
 import 'package:ezi_download/main.dart';
+import 'package:ezi_download/paste_link_screen.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const EziDownloadApp());
-
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+  testWidgets('shows onboarding on a fresh install', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const EziDownloadApp(onboardingSeen: false));
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Skip'), findsOneWidget);
+    // The heading is a RichText (two coloured spans), so opt into rich text.
+    expect(
+      find.textContaining('Welcome to Video', findRichText: true),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('skips onboarding once it has been seen', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const EziDownloadApp(onboardingSeen: true));
+    await tester.pump();
+
+    expect(find.text('Skip'), findsNothing);
+    expect(find.text('Popular Platforms'), findsOneWidget);
+  });
+
+  testWidgets('a shared link arrives already filled in', (
+    WidgetTester tester,
+  ) async {
+    const shared = 'https://vm.tiktok.com/ZSVcQJKB9/';
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: PasteLinkScreen(platformName: 'TikTok', initialLink: shared),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text(shared), findsOneWidget);
+  });
+
+  testWidgets('downloads screen explains itself when empty', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await tester.pumpWidget(const MaterialApp(home: DownloadsScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('My Downloads'), findsOneWidget);
+    expect(find.text('Nothing downloaded yet'), findsOneWidget);
   });
 }

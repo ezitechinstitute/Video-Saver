@@ -4,12 +4,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'how_to_download_screen.dart';
+import 'error_message.dart';
+import 'platforms.dart';
 import 'services/download_service.dart';
+import 'webview_screen.dart';
 
 class PasteLinkScreen extends StatefulWidget {
   final String platformName;
 
-  const PasteLinkScreen({super.key, required this.platformName});
+  /// Link the screen opens with, when it was reached by sharing a video into
+  /// the app rather than by tapping a platform tile.
+  final String? initialLink;
+
+  const PasteLinkScreen({
+    super.key,
+    required this.platformName,
+    this.initialLink,
+  });
 
   @override
   State<PasteLinkScreen> createState() => _PasteLinkScreenState();
@@ -26,6 +38,17 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
   int _downloadTotal = 0;
 
   String _selectedQuality = '1080p';
+
+  @override
+  void initState() {
+    super.initState();
+
+    final shared = widget.initialLink?.trim();
+
+    if (shared != null && shared.isNotEmpty) {
+      _linkController.text = shared;
+    }
+  }
 
   @override
   void dispose() {
@@ -58,6 +81,49 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
     setState(() {
       _linkController.text = clipboardData.text!.trim();
     });
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: Colors.red.shade900,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 5),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline_rounded, color: Colors.white),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                message,
+                style: GoogleFonts.poppins(color: Colors.white, fontSize: 11),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // BROWSE THE PLATFORM IN-APP
+  // ============================================================
+
+  void _browsePlatform() {
+    final platform = platformByName(widget.platformName);
+
+    if (platform == null || !platform.canBrowse) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            WebViewScreen(url: platform.browseUrl, platformName: platform.name),
+      ),
+    );
   }
 
   // ============================================================
@@ -110,80 +176,40 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
       return;
     }
 
-    final platform = widget.platformName.toLowerCase();
-
     // ============================================================
-    // BASIC PLATFORM VALIDATION
+    // PLATFORM AND VIDEO-LINK VALIDATION
     // ============================================================
+    //
+    // Catching a bad link here matters: on the server every non-video URL
+    // becomes a yt-dlp run that is guaranteed to fail, and the user waits
+    // through it only to be told it did not work.
 
-    bool validPlatform = true;
+    final platform = platformByName(widget.platformName);
 
-    if (platform.contains('tiktok')) {
-      validPlatform =
-          uri.host.contains('tiktok.com') || uri.host.contains('vm.tiktok.com');
-    } else if (platform.contains('instagram')) {
-      validPlatform = uri.host.contains('instagram.com');
-    } else if (platform.contains('facebook')) {
-      validPlatform =
-          uri.host.contains('facebook.com') || uri.host.contains('fb.watch');
-    }
+    if (platform != null && !platform.matchesHost(uri)) {
+      final pasted = platformForUrl(uri);
 
-    if (!validPlatform) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.red.shade900,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          content: Row(
-            children: [
-              const Icon(Icons.error_outline_rounded, color: Colors.white),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Please paste a valid ${widget.platformName} video link.',
-                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 11),
-                ),
-              ),
-            ],
-          ),
-        ),
+      _showError(
+        pasted == null
+            ? 'That is not a ${widget.platformName} link. Paste a link copied from ${widget.platformName}.'
+            : 'That looks like a ${pasted.name} link. Open ${pasted.name} from the home screen to download it.',
       );
-
       return;
     }
 
-    // ============================================================
-    // TIKTOK EXTRA URL INFO CHECK
-    // ============================================================
-
-    if (platform.contains('tiktok') && uri.queryParameters.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: const Color(0xff287EFF),
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 5),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          content: Row(
-            children: [
-              const Icon(Icons.link_off_rounded, color: Colors.white, size: 22),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Please remove extra information from the TikTok link and try again.',
-                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 11),
-                ),
-              ),
-            ],
-          ),
-        ),
+    if (platform != null && !platform.isVideoUrl(uri)) {
+      _showError(
+        'That link points at a page, not a video. Open the video on '
+        '${widget.platformName}, tap Share, then copy the link.',
       );
-
       return;
     }
+
+    // Links shared from the platform apps carry tracking parameters that the
+    // extractor chokes on, so strip them before sending.
+    final String requestUrl = cleanVideoUrl(uri);
+
+    debugPrint('🧹 Cleaned link: $requestUrl');
 
     if (!mounted) return;
 
@@ -203,12 +229,12 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
       debugPrint('==========================================');
       debugPrint('📤 PASTE LINK DOWNLOAD');
       debugPrint('🌐 Platform: ${widget.platformName}');
-      debugPrint('🔗 URL: $url');
+      debugPrint('🔗 URL: $requestUrl');
       debugPrint('🎞️ Quality: $_selectedQuality');
       debugPrint('==========================================');
 
       final download = await DownloadService.instance.createDownload(
-        url: url,
+        url: requestUrl,
         platform: widget.platformName,
         quality: _selectedQuality,
       );
@@ -325,7 +351,10 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'We couldn’t download this video. Please check the link and try again.',
+                  friendlyError(
+                    e,
+                    'We couldn’t download this video. Please check the link and try again.',
+                  ),
                   style: GoogleFonts.poppins(color: Colors.white, fontSize: 11),
                 ),
               ),
@@ -342,10 +371,14 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF07132D),
-      body: SafeArea(
-        child: Stack(children: [const _DownloadBackground(), _buildBody()]),
+    return PopScope(
+      // Don't let the system back button abandon a running download.
+      canPop: !_isDownloading,
+      child: Scaffold(
+        backgroundColor: const Color(0xFF07132D),
+        body: SafeArea(
+          child: Stack(children: [const _DownloadBackground(), _buildBody()]),
+        ),
       ),
     );
   }
@@ -420,7 +453,24 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
               ),
             ),
           ),
-          _GlassIconButton(icon: Icons.help_outline_rounded, onTap: () {}),
+          if (platformByName(widget.platformName)?.canBrowse ?? false) ...[
+            _GlassIconButton(
+              icon: Icons.travel_explore_rounded,
+              onTap: _isDownloading ? () {} : _browsePlatform,
+            ),
+            const SizedBox(width: 8),
+          ],
+          _GlassIconButton(
+            icon: Icons.help_outline_rounded,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const HowToDownloadScreen(),
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
