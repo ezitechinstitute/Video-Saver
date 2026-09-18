@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -107,6 +108,14 @@ class _EziDownloadAppState extends State<EziDownloadApp> {
       theme: ThemeData(
         useMaterial3: true,
         textTheme: GoogleFonts.interTextTheme(),
+      ),
+      // Every screen is dark navy, but the theme is light, so Android drew
+      // dark status bar icons that could barely be seen. Light icons, app wide.
+      builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.light.copyWith(
+          statusBarColor: Colors.transparent,
+        ),
+        child: child!,
       ),
       home: widget.onboardingSeen
           ? const HomeScreen()

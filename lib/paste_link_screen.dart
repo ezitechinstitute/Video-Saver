@@ -409,9 +409,20 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
                     const SizedBox(height: 18),
                     _buildQualitySection(),
                     const SizedBox(height: 18),
-                    _buildDownloadButton(),
-                    const SizedBox(height: 16),
-                    _buildFooterNote(),
+                    // The progress panel is laid over these while a download
+                    // runs; hide them so their edges and text do not show
+                    // round it. Opacity keeps their space, so nothing jumps.
+                    Opacity(
+                      opacity: _isDownloading ? 0 : 1,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildDownloadButton(),
+                          const SizedBox(height: 16),
+                          _buildFooterNote(),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -853,7 +864,7 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
       child: Container(
         padding: const EdgeInsets.fromLTRB(15, 14, 15, 15),
         decoration: BoxDecoration(
-          color: const Color(0xFF0D1B38).withValues(alpha: 0.88),
+          color: const Color(0xFF0D1B38),
           borderRadius: BorderRadius.circular(23),
           border: Border.all(
             color: const Color(0xFF63BCFF).withValues(alpha: 0.20),

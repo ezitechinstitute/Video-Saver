@@ -890,7 +890,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
       child: Container(
         padding: const EdgeInsets.fromLTRB(15, 14, 15, 15),
         decoration: BoxDecoration(
-          color: const Color(0xFF0B1B38).withValues(alpha: 0.91),
+          color: const Color(0xFF0B1B38),
           borderRadius: BorderRadius.circular(23),
           border: Border.all(
             color: const Color(0xFF63BCFF).withValues(alpha: 0.20),
