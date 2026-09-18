@@ -8,10 +8,13 @@
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="29" />
 
+    <!-- requestLegacyExternalStorage: saving into the EziDownload album needs
+         it on Android 10 (API 29); newer versions ignore it. -->
     <application
        android:label="Video Saver"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:requestLegacyExternalStorage="true">
 
         <activity
             android:name=".MainActivity"

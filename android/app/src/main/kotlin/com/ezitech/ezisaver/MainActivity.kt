@@ -11,10 +11,11 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 /**
- * Bridges two things Dart cannot do on its own:
+ * Bridges what Dart cannot do on its own:
  *
- *  - links shared into the app from another app's share sheet, and
- *  - the download progress notification.
+ *  - links shared into the app from another app's share sheet,
+ *  - the download progress notification, and
+ *  - the status saver's folder picker and file access ([StatusSaver]).
  */
 class MainActivity : FlutterActivity() {
 
@@ -24,6 +25,8 @@ class MainActivity : FlutterActivity() {
     private var pendingLink: String? = null
 
     private var notificationPermissionResult: MethodChannel.Result? = null
+
+    private var statusSaver: StatusSaver? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -83,7 +86,17 @@ class MainActivity : FlutterActivity() {
             }
         }
 
+        statusSaver = StatusSaver(this).also {
+            MethodChannel(messenger, StatusSaver.CHANNEL).setMethodCallHandler(it)
+        }
+
         linkFrom(intent)?.let { pendingLink = it }
+    }
+
+    @Deprecated("Needed for the system folder picker used by the status saver")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (statusSaver?.onActivityResult(requestCode, resultCode, data) == true) return
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     override fun onNewIntent(intent: Intent) {

@@ -6,6 +6,7 @@ import 'how_to_download_screen.dart';
 import 'platform_glyphs.dart';
 import 'platforms.dart';
 import 'paste_link_screen.dart';
+import 'status_saver_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -42,6 +43,8 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 13),
           _buildPlatformGrid(),
           const SizedBox(height: 20),
+          _buildStatusSaverCard(),
+          const SizedBox(height: 12),
           _buildHowToDownloadCard(),
           const SizedBox(height: 12),
         ],
@@ -366,6 +369,84 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusSaverCard() {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const StatusSaverScreen()),
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(25),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF1769FF).withValues(alpha: 0.18),
+              Colors.white.withValues(alpha: 0.05),
+            ],
+          ),
+          border: Border.all(
+            color: const Color(0xFF55C8FF).withValues(alpha: 0.28),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1769FF), Color(0xFF55C8FF)],
+                ),
+              ),
+              child: const Icon(
+                Icons.auto_awesome_motion_rounded,
+                color: Colors.white,
+                size: 30,
+              ),
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Status Saver',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    'Save statuses you have viewed to your gallery.',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFFA9B9D3),
+                      fontSize: 10.5,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: Color(0xFF8FA4C0),
+              size: 26,
+            ),
+          ],
         ),
       ),
     );
