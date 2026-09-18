@@ -14,8 +14,7 @@ import io.flutter.plugin.common.MethodChannel
  * Bridges two things Dart cannot do on its own:
  *
  *  - links shared into the app from another app's share sheet, and
- *  - the download notification, which also keeps the process alive so a
- *    download survives the user switching away.
+ *  - the download progress notification.
  */
 class MainActivity : FlutterActivity() {
 
@@ -30,6 +29,11 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
 
         val messenger = flutterEngine.dartExecutor.binaryMessenger
+
+        // A progress notification left over from a download that died with
+        // the process. If a download is in fact still running, its next
+        // progress update puts the notification straight back.
+        DownloadNotifications.cancelOngoing(applicationContext)
 
         shareChannel = MethodChannel(messenger, SHARE_CHANNEL).apply {
             setMethodCallHandler { call, result ->

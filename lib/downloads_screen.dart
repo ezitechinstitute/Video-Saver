@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -318,96 +316,93 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
       onDismissed: (_) => _forget(download),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white.withValues(alpha: 0.08),
-                  const Color(0xFF113064).withValues(alpha: 0.16),
-                ],
-              ),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withValues(alpha: 0.08),
+                const Color(0xFF113064).withValues(alpha: 0.16),
+              ],
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildThumbnail(thumbnail, platform),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+            border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildThumbnail(thumbnail, platform),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title == null || title.isEmpty ? url : title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    Row(
+                      children: [
+                        _StatusChip(status: status),
+                        const SizedBox(width: 7),
+                        if (platform != null)
+                          Text(
+                            platform.name,
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFF8FA4C0),
+                              fontSize: 10,
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (status == 'failed' &&
+                        (download['error_message']?.toString().isNotEmpty ??
+                            false)) ...[
+                      const SizedBox(height: 6),
                       Text(
-                        title == null || title.isEmpty ? url : title,
+                        download['error_message'].toString(),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
-                          height: 1.35,
+                          color: const Color(0xFFE08A8A),
+                          fontSize: 9.5,
+                          height: 1.4,
                         ),
                       ),
-                      const SizedBox(height: 7),
-                      Row(
-                        children: [
-                          _StatusChip(status: status),
-                          const SizedBox(width: 7),
-                          if (platform != null)
-                            Text(
-                              platform.name,
-                              style: GoogleFonts.poppins(
-                                color: const Color(0xFF8FA4C0),
-                                fontSize: 10,
-                              ),
-                            ),
-                        ],
-                      ),
-                      if (status == 'failed' &&
-                          (download['error_message']?.toString().isNotEmpty ??
-                              false)) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          download['error_message'].toString(),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.poppins(
-                            color: const Color(0xFFE08A8A),
-                            fontSize: 9.5,
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
                     ],
-                  ),
+                  ],
                 ),
-                if (status == 'completed')
-                  IconButton(
-                    onPressed: isSaving ? null : () => _saveAgain(download),
-                    tooltip: 'Save to gallery again',
-                    icon: isSaving
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Color(0xFF45C7FF),
-                            ),
-                          )
-                        : const Icon(
-                            Icons.save_alt_rounded,
-                            color: Color(0xFF55C8FF),
-                            size: 21,
+              ),
+              if (status == 'completed')
+                IconButton(
+                  onPressed: isSaving ? null : () => _saveAgain(download),
+                  tooltip: 'Save to gallery again',
+                  icon: isSaving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFF45C7FF),
                           ),
-                  ),
-              ],
-            ),
+                        )
+                      : const Icon(
+                          Icons.save_alt_rounded,
+                          color: Color(0xFF55C8FF),
+                          size: 21,
+                        ),
+                ),
+            ],
           ),
         ),
       ),
@@ -506,22 +501,19 @@ class _GlassButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(15),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Material(
-          color: Colors.white.withValues(alpha: 0.07),
-          child: InkWell(
-            onTap: onTap,
-            child: Container(
-              width: 44,
-              height: 44,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.white.withValues(alpha: 0.13)),
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Icon(icon, color: Colors.white, size: 21),
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.07),
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            width: 44,
+            height: 44,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.white.withValues(alpha: 0.13)),
+              borderRadius: BorderRadius.circular(15),
             ),
+            child: Icon(icon, color: Colors.white, size: 21),
           ),
         ),
       ),

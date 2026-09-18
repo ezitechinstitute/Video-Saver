@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -82,100 +80,97 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHeroSection() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(30),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(18, 20, 14, 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(30),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withValues(alpha: 0.09),
-                const Color(0xFF1769FF).withValues(alpha: 0.13),
-                const Color(0xFF07132D).withValues(alpha: 0.38),
-              ],
-            ),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.13),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF1769FF).withValues(alpha: 0.14),
-                blurRadius: 28,
-                offset: const Offset(0, 12),
-              ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(18, 20, 14, 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(30),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withValues(alpha: 0.09),
+              const Color(0xFF1769FF).withValues(alpha: 0.13),
+              const Color(0xFF07132D).withValues(alpha: 0.38),
             ],
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                flex: 6,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Welcome back 👋',
-                      style: GoogleFonts.poppins(
-                        color: const Color(0xFFB7C8E5),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: 'Video',
-                            style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontSize: 29,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.7,
-                            ),
-                          ),
-                          TextSpan(
-                            text: 'Saver',
-                            style: GoogleFonts.poppins(
-                              color: const Color(0xFF49BCFF),
-                              fontSize: 29,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.7,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      'Browse. Save. Enjoy.',
-                      style: GoogleFonts.poppins(
-                        color: const Color(0xFFB0BDD4),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                flex: 4,
-                child: Image.asset(
-                  'assets/images/home_hero.png',
-                  height: 145,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const _HeroFallback();
-                  },
-                ),
-              ),
-            ],
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.13),
+            width: 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF1769FF).withValues(alpha: 0.14),
+              blurRadius: 28,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              flex: 6,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Welcome back 👋',
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFFB7C8E5),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'Video',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 29,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.7,
+                          ),
+                        ),
+                        TextSpan(
+                          text: 'Saver',
+                          style: GoogleFonts.poppins(
+                            color: const Color(0xFF49BCFF),
+                            fontSize: 29,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.7,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    'Browse. Save. Enjoy.',
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFFB0BDD4),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              flex: 4,
+              child: Image.asset(
+                'assets/images/home_hero.png',
+                height: 145,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return const _HeroFallback();
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -184,85 +179,82 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildInfoCard() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                const Color(0xFF1769FF).withValues(alpha: 0.16),
-                Colors.white.withValues(alpha: 0.055),
-              ],
-            ),
-            border: Border.all(
-              color: const Color(0xFF69C4FF).withValues(alpha: 0.18),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF1769FF).withValues(alpha: 0.08),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF1769FF).withValues(alpha: 0.16),
+              Colors.white.withValues(alpha: 0.055),
             ],
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF43C7FF), Color(0xFF246AF2)],
+          border: Border.all(
+            color: const Color(0xFF69C4FF).withValues(alpha: 0.18),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF1769FF).withValues(alpha: 0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF43C7FF), Color(0xFF246AF2)],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF42B8FF).withValues(alpha: 0.18),
+                    blurRadius: 14,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF42B8FF).withValues(alpha: 0.18),
-                      blurRadius: 14,
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.download_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Save your favorite videos',
-                      style: GoogleFonts.poppins(
-                        color: const Color(0xFFEAF5FF),
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Choose a platform below to get started.',
-                      style: GoogleFonts.poppins(
-                        color: const Color(0xFF9DB3D3),
-                        fontSize: 10.5,
-                        height: 1.35,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ],
-                ),
+              child: const Icon(
+                Icons.download_rounded,
+                color: Colors.white,
+                size: 22,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Save your favorite videos',
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFFEAF5FF),
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Choose a platform below to get started.',
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFF9DB3D3),
+                      fontSize: 10.5,
+                      height: 1.35,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -309,73 +301,70 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () => _openPlatform(platform),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(19),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(19),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white.withValues(alpha: 0.10),
-                  const Color(0xFF113064).withValues(alpha: 0.17),
-                ],
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(19),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withValues(alpha: 0.10),
+                const Color(0xFF113064).withValues(alpha: 0.17),
+              ],
+            ),
+            border: Border.all(color: color.withValues(alpha: 0.22)),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.10),
+                blurRadius: 18,
+                offset: const Offset(0, 7),
               ),
-              border: Border.all(color: color.withValues(alpha: 0.22)),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.10),
-                  blurRadius: 18,
-                  offset: const Offset(0, 7),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 51,
-                  height: 51,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: platform.gradient,
-                    ),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.17),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.55),
-                        blurRadius: 15,
-                      ),
-                    ],
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 51,
+                height: 51,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: platform.gradient,
                   ),
-                  child: Center(
-                    child: PlatformGlyphIcon(glyph: platform.glyph, size: 27),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.17),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  child: Text(
-                    platform.name,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(
-                      color: const Color(0xFFDCE7F8),
-                      fontSize: 8.5,
-                      fontWeight: FontWeight.w600,
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.55),
+                      blurRadius: 15,
                     ),
+                  ],
+                ),
+                child: Center(
+                  child: PlatformGlyphIcon(glyph: platform.glyph, size: 27),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: Text(
+                  platform.name,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFFDCE7F8),
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -385,122 +374,119 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHowToDownloadCard() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(25),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(25),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withValues(alpha: 0.10),
-                const Color(0xFF5D5CF0).withValues(alpha: 0.10),
-                Colors.white.withValues(alpha: 0.045),
-              ],
-            ),
-            border: Border.all(
-              color: const Color(0xFF7ABEFF).withValues(alpha: 0.22),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF1769FF).withValues(alpha: 0.10),
-                blurRadius: 25,
-                offset: const Offset(0, 10),
-              ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(25),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withValues(alpha: 0.10),
+              const Color(0xFF5D5CF0).withValues(alpha: 0.10),
+              Colors.white.withValues(alpha: 0.045),
             ],
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF45C7FF), Color(0xFF6355F5)],
+          border: Border.all(
+            color: const Color(0xFF7ABEFF).withValues(alpha: 0.22),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF1769FF).withValues(alpha: 0.10),
+              blurRadius: 25,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF45C7FF), Color(0xFF6355F5)],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF45BFFF).withValues(alpha: 0.20),
+                    blurRadius: 18,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF45BFFF).withValues(alpha: 0.20),
-                      blurRadius: 18,
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.video_library_rounded,
-                  color: Colors.white,
-                  size: 30,
-                ),
+                ],
               ),
-              const SizedBox(width: 13),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'How to download?',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      'Learn simple steps to download your favorite videos.',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.poppins(
-                        color: const Color(0xFFA9B9D3),
-                        fontSize: 10.5,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
+              child: const Icon(
+                Icons.video_library_rounded,
+                color: Colors.white,
+                size: 30,
               ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const HowToDownloadScreen(),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 15,
-                    vertical: 11,
-                  ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(15),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF5F77FF), Color(0xFF6D43F3)],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF6D54F6).withValues(alpha: 0.18),
-                        blurRadius: 14,
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    'Learn',
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'How to download?',
                     style: GoogleFonts.poppins(
                       color: Colors.white,
-                      fontSize: 11.5,
+                      fontSize: 15,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
+                  const SizedBox(height: 3),
+                  Text(
+                    'Learn simple steps to download your favorite videos.',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFFA9B9D3),
+                      fontSize: 10.5,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const HowToDownloadScreen(),
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 15,
+                  vertical: 11,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(15),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF5F77FF), Color(0xFF6D43F3)],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF6D54F6).withValues(alpha: 0.18),
+                      blurRadius: 14,
+                    ),
+                  ],
+                ),
+                child: Text(
+                  'Learn',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -547,22 +533,19 @@ class _GlassIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Material(
-          color: Colors.white.withValues(alpha: 0.08),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.13)),
-              ),
-              child: Icon(icon, color: const Color(0xFFE8F4FF), size: 23),
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.08),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.13)),
             ),
+            child: Icon(icon, color: const Color(0xFFE8F4FF), size: 23),
           ),
         ),
       ),
@@ -640,12 +623,15 @@ class _GlowCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ImageFiltered(
-      imageFilter: ImageFilter.blur(sigmaX: 55, sigmaY: 55),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [color, color.withValues(alpha: 0)],
+          stops: const [0.25, 1.0],
+        ),
       ),
     );
   }

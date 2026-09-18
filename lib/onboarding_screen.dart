@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -124,27 +122,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             onTap: _skipOnboarding,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(15),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.14),
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.14),
-                    ),
-                  ),
-                  child: Text(
-                    'Skip',
-                    style: GoogleFonts.inter(
-                      color: Colors.white.withValues(alpha: 0.88),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
+                ),
+                child: Text(
+                  'Skip',
+                  style: GoogleFonts.inter(
+                    color: Colors.white.withValues(alpha: 0.88),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -167,72 +162,67 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: Center(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(34),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                  child: Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 2,
-                      vertical: 12,
+                child: Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 2,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(34),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white.withValues(alpha: 0.09),
+                        const Color(0xFF1769FF).withValues(alpha: 0.10),
+                        Colors.white.withValues(alpha: 0.04),
+                      ],
                     ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(34),
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Colors.white.withValues(alpha: 0.09),
-                          const Color(0xFF1769FF).withValues(alpha: 0.10),
-                          Colors.white.withValues(alpha: 0.04),
-                        ],
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.14),
+                      width: 1.1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF1769FF).withValues(alpha: 0.12),
+                        blurRadius: 35,
+                        spreadRadius: 2,
                       ),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.14),
-                        width: 1.1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
+                    ],
+                  ),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        top: 18,
+                        left: 18,
+                        child: _GlassDot(
+                          size: 42,
                           color: const Color(
-                            0xFF1769FF,
-                          ).withValues(alpha: 0.12),
-                          blurRadius: 35,
-                          spreadRadius: 2,
+                            0xFF4FC3F7,
+                          ).withValues(alpha: 0.16),
                         ),
-                      ],
-                    ),
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          top: 18,
-                          left: 18,
-                          child: _GlassDot(
-                            size: 42,
-                            color: const Color(
-                              0xFF4FC3F7,
-                            ).withValues(alpha: 0.16),
+                      ),
+                      Positioned(
+                        bottom: 22,
+                        right: 20,
+                        child: _GlassDot(
+                          size: 58,
+                          color: const Color(
+                            0xFF7A42F4,
+                          ).withValues(alpha: 0.14),
+                        ),
+                      ),
+                      Positioned.fill(
+                        child: Padding(
+                          padding: const EdgeInsets.all(18),
+                          child: Image.asset(
+                            page['image']!,
+                            fit: BoxFit.contain,
                           ),
                         ),
-                        Positioned(
-                          bottom: 22,
-                          right: 20,
-                          child: _GlassDot(
-                            size: 58,
-                            color: const Color(
-                              0xFF7A42F4,
-                            ).withValues(alpha: 0.14),
-                          ),
-                        ),
-                        Positioned.fill(
-                          child: Padding(
-                            padding: const EdgeInsets.all(18),
-                            child: Image.asset(
-                              page['image']!,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -414,16 +404,13 @@ class _GlassDot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipOval(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: color,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
-          ),
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: color,
+          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
         ),
       ),
     );
@@ -476,12 +463,15 @@ class _GlowCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ImageFiltered(
-      imageFilter: ImageFilter.blur(sigmaX: 55, sigmaY: 55),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [color, color.withValues(alpha: 0)],
+          stops: const [0.25, 1.0],
+        ),
       ),
     );
   }

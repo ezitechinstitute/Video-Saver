@@ -418,8 +418,8 @@ class DownloadService {
     // user may never answer. Without the permission it simply runs unseen.
     unawaited(notifier.requestPermission());
 
-    // Showing the notification is also what keeps the download alive when the
-    // user switches away, so it goes up before any work starts.
+    // Put the notification up before any work starts, so the user sees the
+    // download begin even while the server is still preparing the file.
     await notifier.showProgress(
       title: 'Preparing your video',
       text: 'Waiting for the server…',

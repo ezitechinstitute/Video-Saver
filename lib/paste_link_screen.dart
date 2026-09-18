@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -264,6 +262,15 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
               if (!mounted) return;
 
               if (total > 0) {
+                // Dio reports every chunk, often hundreds a second. Rebuild
+                // only when the whole percent moves.
+                if (!_isPreparingDownload &&
+                    _downloadTotal > 0 &&
+                    received * 100 ~/ total ==
+                        _downloadReceived * 100 ~/ _downloadTotal) {
+                  return;
+                }
+
                 setState(() {
                   _isPreparingDownload = false;
                   _downloadReceived = received;
@@ -483,86 +490,81 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
   Widget _buildHeroCard() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(28),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(18, 21, 18, 20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withValues(alpha: 0.10),
-                const Color(0xFF1769FF).withValues(alpha: 0.12),
-                const Color(0xFF6448F1).withValues(alpha: 0.08),
-                Colors.white.withValues(alpha: 0.035),
-              ],
-            ),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF1769FF).withValues(alpha: 0.12),
-                blurRadius: 28,
-                offset: const Offset(0, 12),
-              ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(18, 21, 18, 20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withValues(alpha: 0.10),
+              const Color(0xFF1769FF).withValues(alpha: 0.12),
+              const Color(0xFF6448F1).withValues(alpha: 0.08),
+              Colors.white.withValues(alpha: 0.035),
             ],
           ),
-          child: Column(
-            children: [
-              Container(
-                width: 82,
-                height: 82,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(26),
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFF48C9FF),
-                      Color(0xFF357CFF),
-                      Color(0xFF6949F0),
-                    ],
-                  ),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.18),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF43BCFF).withValues(alpha: 0.24),
-                      blurRadius: 24,
-                    ),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF1769FF).withValues(alpha: 0.12),
+              blurRadius: 28,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 82,
+              height: 82,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(26),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF48C9FF),
+                    Color(0xFF357CFF),
+                    Color(0xFF6949F0),
                   ],
                 ),
-                child: const Icon(
-                  Icons.link_rounded,
-                  color: Colors.white,
-                  size: 40,
-                ),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF43BCFF).withValues(alpha: 0.24),
+                    blurRadius: 24,
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              Text(
-                'Download from ${widget.platformName}',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
+              child: const Icon(
+                Icons.link_rounded,
+                color: Colors.white,
+                size: 40,
               ),
-              const SizedBox(height: 7),
-              Text(
-                'Paste the video link below to start your download.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  color: const Color(0xFF9EAFCA),
-                  fontSize: 11.5,
-                  height: 1.5,
-                ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Download from ${widget.platformName}',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 7),
+            Text(
+              'Paste the video link below to start your download.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                color: const Color(0xFF9EAFCA),
+                fontSize: 11.5,
+                height: 1.5,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -575,84 +577,74 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
   Widget _buildLinkSection() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(15),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.07),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Video Link',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Video Link',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
               ),
+            ),
 
-              const SizedBox(height: 10),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(18),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.055),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: const Color(0xFF63BCFF).withValues(alpha: 0.19),
-                      ),
-                    ),
-                    child: TextField(
-                      controller: _linkController,
-                      enabled: !_isDownloading,
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 12,
-                      ),
-                      maxLines: 3,
-                      minLines: 1,
-                      keyboardType: TextInputType.url,
-                      decoration: InputDecoration(
-                        hintText:
-                            'Paste ${widget.platformName} video link here...',
-                        hintStyle: GoogleFonts.poppins(
-                          color: const Color(0xFF71839F),
-                          fontSize: 11,
-                        ),
-                        prefixIcon: const Icon(
-                          Icons.link_rounded,
-                          color: Color(0xFF55C8FF),
-                          size: 21,
-                        ),
-                        suffixIcon: IconButton(
-                          onPressed: _isDownloading ? null : _pasteLink,
-                          icon: const Icon(
-                            Icons.content_paste_rounded,
-                            color: Color(0xFF55C8FF),
-                            size: 20,
-                          ),
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 14,
-                        ),
-                      ),
-                      onSubmitted: (_) => _startDownload(),
-                    ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.055),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: const Color(0xFF63BCFF).withValues(alpha: 0.19),
                   ),
                 ),
+                child: TextField(
+                  controller: _linkController,
+                  enabled: !_isDownloading,
+                  style: GoogleFonts.poppins(color: Colors.white, fontSize: 12),
+                  maxLines: 3,
+                  minLines: 1,
+                  keyboardType: TextInputType.url,
+                  decoration: InputDecoration(
+                    hintText: 'Paste ${widget.platformName} video link here...',
+                    hintStyle: GoogleFonts.poppins(
+                      color: const Color(0xFF71839F),
+                      fontSize: 11,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.link_rounded,
+                      color: Color(0xFF55C8FF),
+                      size: 21,
+                    ),
+                    suffixIcon: IconButton(
+                      onPressed: _isDownloading ? null : _pasteLink,
+                      icon: const Icon(
+                        Icons.content_paste_rounded,
+                        color: Color(0xFF55C8FF),
+                        size: 20,
+                      ),
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 14,
+                    ),
+                  ),
+                  onSubmitted: (_) => _startDownload(),
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -665,116 +657,113 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
   Widget _buildQualitySection() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(15),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.07),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Video Quality',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Video Quality',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
               ),
-              const SizedBox(height: 10),
-              GestureDetector(
-                onTap: _isDownloading
-                    ? null
-                    : () {
-                        setState(() {
-                          _selectedQuality = '1080p';
-                        });
-                      },
-                child: Container(
-                  padding: const EdgeInsets.all(13),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xFF3097FF).withValues(alpha: 0.16),
-                        const Color(0xFF5867F1).withValues(alpha: 0.08),
-                      ],
-                    ),
-                    border: Border.all(
-                      color: const Color(0xFF58B6FF).withValues(alpha: 0.35),
-                      width: 1.1,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 45,
-                        height: 45,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(13),
-                          color: Colors.white.withValues(alpha: 0.08),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.09),
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.high_quality_rounded,
-                          color: Color(0xFF55C8FF),
-                          size: 23,
-                        ),
-                      ),
-                      const SizedBox(width: 11),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '1080p',
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Full HD • Best quality',
-                              style: GoogleFonts.poppins(
-                                color: const Color(0xFF8E9EB8),
-                                fontSize: 9.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        width: 22,
-                        height: 22,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: const Color(0xFF55C8FF),
-                            width: 2,
-                          ),
-                        ),
-                        child: const Center(
-                          child: CircleAvatar(
-                            radius: 5,
-                            backgroundColor: Color(0xFF55C8FF),
-                          ),
-                        ),
-                      ),
+            ),
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: _isDownloading
+                  ? null
+                  : () {
+                      setState(() {
+                        _selectedQuality = '1080p';
+                      });
+                    },
+              child: Container(
+                padding: const EdgeInsets.all(13),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF3097FF).withValues(alpha: 0.16),
+                      const Color(0xFF5867F1).withValues(alpha: 0.08),
                     ],
                   ),
+                  border: Border.all(
+                    color: const Color(0xFF58B6FF).withValues(alpha: 0.35),
+                    width: 1.1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 45,
+                      height: 45,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(13),
+                        color: Colors.white.withValues(alpha: 0.08),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.09),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.high_quality_rounded,
+                        color: Color(0xFF55C8FF),
+                        size: 23,
+                      ),
+                    ),
+                    const SizedBox(width: 11),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '1080p',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Full HD • Best quality',
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFF8E9EB8),
+                              fontSize: 9.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFF55C8FF),
+                          width: 2,
+                        ),
+                      ),
+                      child: const Center(
+                        child: CircleAvatar(
+                          radius: 5,
+                          backgroundColor: Color(0xFF55C8FF),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -861,123 +850,118 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(23),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(15, 14, 15, 15),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0D1B38).withValues(alpha: 0.88),
-            borderRadius: BorderRadius.circular(23),
-            border: Border.all(
-              color: const Color(0xFF63BCFF).withValues(alpha: 0.20),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.28),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(15, 14, 15, 15),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0D1B38).withValues(alpha: 0.88),
+          borderRadius: BorderRadius.circular(23),
+          border: Border.all(
+            color: const Color(0xFF63BCFF).withValues(alpha: 0.20),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF42C8FF), Color(0xFF397EF4)],
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.download_rounded,
-                      color: Colors.white,
-                      size: 21,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _isPreparingDownload
-                              ? 'Preparing your video...'
-                              : 'Downloading video',
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _isPreparingDownload
-                              ? 'Processing your MP4 file'
-                              : '$receivedText of $totalText',
-                          style: GoogleFonts.poppins(
-                            color: const Color(0xFF8F9DB7),
-                            fontSize: 9.5,
-                          ),
-                        ),
-                      ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.28),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF42C8FF), Color(0xFF397EF4)],
                     ),
                   ),
-                  if (!_isPreparingDownload)
-                    Text(
-                      '$percentage%',
-                      style: GoogleFonts.poppins(
-                        color: const Color(0xFF58C9FF),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                ],
-              ),
-
-              const SizedBox(height: 13),
-
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: LinearProgressIndicator(
-                  value: _isPreparingDownload ? null : progress,
-                  minHeight: 6,
-                  backgroundColor: const Color(0xFF1B2A4A),
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    Color(0xFF4DC7FF),
+                  child: const Icon(
+                    Icons.download_rounded,
+                    color: Colors.white,
+                    size: 21,
                   ),
                 ),
-              ),
-
-              const SizedBox(height: 9),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _isPreparingDownload
+                            ? 'Preparing your video...'
+                            : 'Downloading video',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _isPreparingDownload
+                            ? 'Processing your MP4 file'
+                            : '$receivedText of $totalText',
+                        style: GoogleFonts.poppins(
+                          color: const Color(0xFF8F9DB7),
+                          fontSize: 9.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (!_isPreparingDownload)
                   Text(
-                    _isPreparingDownload
-                        ? 'Please wait...'
-                        : 'Saving to Gallery',
+                    '$percentage%',
                     style: GoogleFonts.poppins(
-                      color: const Color(0xFF8393AD),
-                      fontSize: 9,
+                      color: const Color(0xFF58C9FF),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  Text(
-                    'MP4 • $_selectedQuality',
-                    style: GoogleFonts.poppins(
-                      color: const Color(0xFF8393AD),
-                      fontSize: 9,
-                    ),
-                  ),
-                ],
+              ],
+            ),
+
+            const SizedBox(height: 13),
+
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: LinearProgressIndicator(
+                value: _isPreparingDownload ? null : progress,
+                minHeight: 6,
+                backgroundColor: const Color(0xFF1B2A4A),
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  Color(0xFF4DC7FF),
+                ),
               ),
-            ],
-          ),
+            ),
+
+            const SizedBox(height: 9),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _isPreparingDownload ? 'Please wait...' : 'Saving to Gallery',
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFF8393AD),
+                    fontSize: 9,
+                  ),
+                ),
+                Text(
+                  'MP4 • $_selectedQuality',
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFF8393AD),
+                    fontSize: 9,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -1018,22 +1002,19 @@ class _GlassIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(15),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Material(
-          color: Colors.white.withValues(alpha: 0.075),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(15),
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.13)),
-              ),
-              child: Icon(icon, color: const Color(0xFFE7F4FF), size: 21),
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.075),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(15),
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.13)),
             ),
+            child: Icon(icon, color: const Color(0xFFE7F4FF), size: 21),
           ),
         ),
       ),
@@ -1091,12 +1072,15 @@ class _GlowCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ImageFiltered(
-      imageFilter: ImageFilter.blur(sigmaX: 55, sigmaY: 55),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [color, color.withValues(alpha: 0)],
+          stops: const [0.25, 1.0],
+        ),
       ),
     );
   }

@@ -15,6 +15,9 @@ object DownloadNotifications {
     const val CHANNEL_ID = "downloads"
     const val ONGOING_ID = 1001
 
+    /** A progress notification not updated for this long belongs to a dead download. */
+    private const val STALE_AFTER_MS = 2 * 60 * 1000L
+
     /** Result notifications are keyed off the download so several can stack. */
     fun resultId(downloadId: Int): Int = 2000 + downloadId
 
@@ -51,6 +54,10 @@ object DownloadNotifications {
             .setOngoing(true)
             .setProgress(100, progress.coerceIn(0, 100), progress < 0)
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            // An ongoing notification cannot be swiped away. If Android kills
+            // the app mid download nothing is left to cancel it, so let it
+            // expire on its own. Every update restarts the clock.
+            .setTimeoutAfter(STALE_AFTER_MS)
             .build()
 
         try {
@@ -73,7 +80,15 @@ object DownloadNotifications {
     ) {
         ensureChannel(context)
 
-        val notification = baseBuilder(context, title, text)
+        // The finished notification must not reuse the in-progress arrow, or
+        // the status bar keeps saying "downloading" after the video is saved.
+        val icon = if (success) {
+            android.R.drawable.stat_sys_download_done
+        } else {
+            android.R.drawable.stat_notify_error
+        }
+
+        val notification = baseBuilder(context, title, text, icon)
             .setAutoCancel(true)
             .setPriority(
                 if (success) NotificationCompat.PRIORITY_DEFAULT
@@ -100,6 +115,7 @@ object DownloadNotifications {
         context: Context,
         title: String,
         text: String,
+        smallIcon: Int = android.R.drawable.stat_sys_download,
     ): NotificationCompat.Builder {
         val open = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -113,7 +129,7 @@ object DownloadNotifications {
         )
 
         return NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_sys_download)
+            .setSmallIcon(smallIcon)
             .setContentTitle(title)
             .setContentText(text)
             .setContentIntent(pending)

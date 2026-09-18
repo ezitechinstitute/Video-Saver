@@ -25,6 +25,10 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_driver:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
 
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
@@ -33,21 +37,24 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
+  # Only what the running app draws. The icon and splash sources live in
+  # assets/branding/, read by the icon and splash generators at build time,
+  # and are deliberately kept out of the APK.
   assets:
     - assets/images/
 
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/home.png"
+  image_path: "assets/branding/app_icon.png"
   remove_alpha_ios: true
 
 flutter_native_splash:
   color: "#07132D"
-  image: "assets/images/splash.png"
+  image: "assets/branding/splash.png"
 
   # Android 12+ masks the splash icon to a circle, so it needs a padded copy
   # with the artwork inside the safe area.
   android_12:
     color: "#07132D"
-    image: "assets/images/splash_android12.png"
+    image: "assets/branding/splash_android12.png"
