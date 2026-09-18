@@ -3,9 +3,10 @@ import 'package:flutter/services.dart';
 
 /// The download's progress in the notification shade.
 ///
-/// Showing it also keeps the download running: on Android the notification is
-/// owned by a foreground service, and that service is what stops the system
-/// freezing the app — and the download with it — when the user switches away.
+/// A plain notification, not a foreground service: downloads here take a few
+/// seconds, so the process does not need protecting from Android freezing it
+/// when backgrounded, and a foreground service would need a Play declaration
+/// with a demonstration video.
 ///
 /// Every call is best-effort. A download must never fail because a notification
 /// could not be drawn.

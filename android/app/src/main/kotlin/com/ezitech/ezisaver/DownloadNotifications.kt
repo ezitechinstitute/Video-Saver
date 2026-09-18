@@ -35,26 +35,33 @@ object DownloadNotifications {
     }
 
     /**
-     * Progress notification. A [progress] below zero means the length is not
-     * known yet — while the server is still preparing the video, for instance.
+     * Shows, or updates, the progress notification for a running download.
+     *
+     * A plain notification, not a foreground service: a download here takes a
+     * few seconds, so it does not need to hold the process against Android
+     * freezing it, and a foreground service would need a Play declaration with
+     * a demonstration video the app does not have.
+     *
+     * A [progress] below zero shows an indeterminate bar (length not known yet).
      */
-    fun ongoing(
-        context: Context,
-        title: String,
-        text: String,
-        progress: Int,
-    ): android.app.Notification {
+    fun showOngoing(context: Context, title: String, text: String, progress: Int) {
         ensureChannel(context)
 
-        return baseBuilder(context, title, text)
+        val notification = baseBuilder(context, title, text)
             .setOngoing(true)
             .setProgress(100, progress.coerceIn(0, 100), progress < 0)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            // Android 12+ holds a foreground service notification back for ten
-            // seconds. Most downloads here finish in about that long, so
-            // without this the progress bar is never actually seen.
-            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()
+
+        try {
+            NotificationManagerCompat.from(context).notify(ONGOING_ID, notification)
+        } catch (e: SecurityException) {
+            // Notifications not permitted; the download still runs unseen.
+        }
+    }
+
+    fun cancelOngoing(context: Context) {
+        NotificationManagerCompat.from(context).cancel(ONGOING_ID)
     }
 
     fun showResult(

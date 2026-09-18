@@ -6,7 +6,6 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:ezi_download/platform_glyphs.dart';
 import 'package:ezi_download/platforms.dart';
 
 void expectAccepted(String platformName, String url) {

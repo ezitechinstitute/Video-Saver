@@ -34,24 +34,14 @@ the brand colours, the hosts, and the URL shapes that can actually hold a video.
 Both download screens validate against it, so a feed, profile or login page is
 refused on the device instead of becoming a server job that is certain to fail.
 
-## Downloads keep running in the background
+## A progress notification while downloading
 
-Starting a download shows a notification, and that notification is owned by a
-foreground service (`DownloadService`). The service downloads nothing — the work
-stays in Dart — it exists so Android does not freeze the app, and the download
-with it, the moment the user switches away.
-
-**Before the next Play submission:** the app now declares
-`FOREGROUND_SERVICE_DATA_SYNC` and `POST_NOTIFICATIONS`. Google Play requires a
-*Foreground service permissions* declaration in the Console for the first one:
-App content → Foreground service permissions. The honest answer is a
-user-initiated video download that shows its progress. Without the declaration
-the release cannot be rolled out.
-
-Android 15+ also caps `dataSync` foreground services at roughly six hours of
-runtime per day across the app. A video download takes seconds, so this is not a
-practical limit here, but it is the reason not to reuse this service for
-anything long-running.
+Starting a download shows a plain progress notification. It is deliberately
+not a foreground service: a download here takes a few seconds, and a foreground
+service (`FOREGROUND_SERVICE_DATA_SYNC`) would need a Play Console declaration
+backed by a demonstration video. The trade-off is that a very long download may
+not survive the user leaving the app immediately; short downloads complete
+fine.
 
 ## Running it
 

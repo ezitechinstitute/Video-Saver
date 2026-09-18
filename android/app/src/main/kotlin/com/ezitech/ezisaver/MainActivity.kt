@@ -48,7 +48,7 @@ class MainActivity : FlutterActivity() {
                 "requestPermission" -> requestNotificationPermission(result)
 
                 "show" -> {
-                    DownloadService.show(
+                    DownloadNotifications.showOngoing(
                         applicationContext,
                         call.argument<String>("title") ?: "Saving video",
                         call.argument<String>("text").orEmpty(),
@@ -58,7 +58,7 @@ class MainActivity : FlutterActivity() {
                 }
 
                 "finish" -> {
-                    DownloadService.stop(applicationContext)
+                    DownloadNotifications.cancelOngoing(applicationContext)
 
                     DownloadNotifications.showResult(
                         applicationContext,
@@ -71,7 +71,7 @@ class MainActivity : FlutterActivity() {
                 }
 
                 "cancel" -> {
-                    DownloadService.stop(applicationContext)
+                    DownloadNotifications.cancelOngoing(applicationContext)
                     result.success(null)
                 }
 
