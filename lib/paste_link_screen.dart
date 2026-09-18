@@ -15,10 +15,14 @@ class PasteLinkScreen extends StatefulWidget {
   /// the app rather than by tapping a platform tile.
   final String? initialLink;
 
+  /// Start downloading [initialLink] as soon as the screen opens.
+  final bool autoStart;
+
   const PasteLinkScreen({
     super.key,
     required this.platformName,
     this.initialLink,
+    this.autoStart = false,
   });
 
   @override
@@ -45,6 +49,14 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
 
     if (shared != null && shared.isNotEmpty) {
       _linkController.text = shared;
+
+      // Reached from a copied or shared link: the user already chose this
+      // video, so start without making them tap Download too.
+      if (widget.autoStart) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && !_isDownloading) _startDownload();
+        });
+      }
     }
   }
 

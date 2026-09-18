@@ -7,6 +7,8 @@ import 'home_screen.dart';
 import 'onboarding_screen.dart';
 import 'paste_link_screen.dart';
 import 'platforms.dart';
+import 'services/clipboard_link.dart';
+import 'services/download_service.dart';
 import 'services/share_service.dart';
 
 /// Key used to remember that the user already went through onboarding.
@@ -40,10 +42,13 @@ class EziDownloadApp extends StatefulWidget {
   State<EziDownloadApp> createState() => _EziDownloadAppState();
 }
 
-class _EziDownloadAppState extends State<EziDownloadApp> {
+class _EziDownloadAppState extends State<EziDownloadApp>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+
+    WidgetsBinding.instance.addObserver(this);
 
     ShareService.instance
       ..onLink = _openSharedLink
@@ -54,8 +59,66 @@ class _EziDownloadAppState extends State<EziDownloadApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final link = await ShareService.instance.takeLaunchLink();
 
-      if (link != null) _openSharedLink(link);
+      if (link != null) {
+        _openSharedLink(link);
+      } else {
+        _checkClipboard();
+      }
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Back from TikTok or Instagram with a link copied. Android hands over
+    // the clipboard only once the window has focus, hence the short wait.
+    if (state == AppLifecycleState.resumed) {
+      Future.delayed(const Duration(milliseconds: 400), _checkClipboard);
+    }
+  }
+
+  /// Starts downloading a video link the user copied before opening the app.
+  Future<void> _checkClipboard() async {
+    // Onboarding first; and one download at a time, since they share the
+    // progress notification.
+    if (DownloadService.instance.isBusy) return;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (!(prefs.getBool(kOnboardingSeenKey) ?? false)) return;
+    } catch (_) {
+      return;
+    }
+
+    final link = await ClipboardLinkWatcher.instance.takeNewLink();
+    if (link == null || !mounted) return;
+
+    messengerKey.currentState?.showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF101A36),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        content: Text(
+          'Downloading the ${link.platform.name} link you copied.',
+          style: GoogleFonts.poppins(color: Colors.white, fontSize: 11),
+        ),
+      ),
+    );
+
+    navigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder: (context) => PasteLinkScreen(
+          platformName: link.platform.name,
+          initialLink: link.url,
+          autoStart: true,
+        ),
+      ),
+    );
   }
 
   /// Opens the download screen for a link shared in from another app.
@@ -74,11 +137,15 @@ class _EziDownloadAppState extends State<EziDownloadApp> {
       return;
     }
 
+    // The same link may still be on the clipboard; it is already handled.
+    ClipboardLinkWatcher.instance.markHandled(link);
+
     navigatorKey.currentState?.push(
       MaterialPageRoute(
         builder: (context) => PasteLinkScreen(
           platformName: platform.name,
           initialLink: link.trim(),
+          autoStart: true,
         ),
       ),
     );

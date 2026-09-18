@@ -402,7 +402,28 @@ class DownloadService {
   // COMPLETE DOWNLOAD FLOW
   // ============================================================
 
+  int _running = 0;
+
+  /// Whether a download is on its way to the gallery right now. There is one
+  /// progress notification, so a second download must not start on top.
+  bool get isBusy => _running > 0;
+
   Future<Map<String, dynamic>> processAndSaveToGallery({
+    required int downloadId,
+    void Function(int received, int total)? onProgress,
+  }) async {
+    _running++;
+    try {
+      return await _processAndSaveToGallery(
+        downloadId: downloadId,
+        onProgress: onProgress,
+      );
+    } finally {
+      _running--;
+    }
+  }
+
+  Future<Map<String, dynamic>> _processAndSaveToGallery({
     required int downloadId,
     void Function(int received, int total)? onProgress,
   }) async {
