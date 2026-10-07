@@ -81,12 +81,17 @@ php artisan migrate --force
 php artisan storage:link || true
 php artisan config:cache
 
-say "yt-dlp (nightly: the sites change faster than the stable releases)"
+# yt-dlp_linux, not the plain yt-dlp: TikTok only answers a request that looks
+# like a real browser's, and only this build carries the curl_cffi impersonation
+# it needs. The plain build fails on every TikTok link, with an error that says
+# nothing about why.
+say "yt-dlp (nightly linux build: the sites change faster than stable releases)"
 mkdir -p storage/app/bin
-curl -fsSL https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp \
+curl -fsSL https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp_linux \
     -o storage/app/bin/yt-dlp.exe
 chmod +x storage/app/bin/yt-dlp.exe
 storage/app/bin/yt-dlp.exe --version
+storage/app/bin/yt-dlp.exe --list-impersonate-targets | head -3
 
 chown -R www-data:www-data "$APP"
 chmod -R ug+rwX storage bootstrap/cache
@@ -143,7 +148,7 @@ systemctl restart ezisaver-worker
 say "Nightly yt-dlp update (sites break it every few weeks)"
 cat > /etc/cron.weekly/ezisaver-ytdlp <<CRON
 #!/bin/sh
-curl -fsSL https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp \
+curl -fsSL https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp_linux \
     -o $APP/storage/app/bin/yt-dlp.exe.new \
   && chmod +x $APP/storage/app/bin/yt-dlp.exe.new \
   && mv $APP/storage/app/bin/yt-dlp.exe.new $APP/storage/app/bin/yt-dlp.exe
