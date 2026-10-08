@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -5,6 +7,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'error_message.dart';
 import 'platforms.dart';
 import 'services/download_service.dart';
+import 'services/review_prompt.dart';
 
 class WebViewScreen extends StatefulWidget {
   final String url;
@@ -600,6 +603,10 @@ class _WebViewScreenState extends State<WebViewScreen> {
           ),
         ),
       );
+
+      // A video just landed in the gallery: the one moment the app has
+      // earned the right to ask for a rating.
+      unawaited(ReviewPrompt.instance.recordSave());
     } catch (e) {
       // ============================================================
       // ERROR HANDLING

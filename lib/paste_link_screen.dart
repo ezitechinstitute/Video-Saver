@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,6 +8,7 @@ import 'how_to_download_screen.dart';
 import 'error_message.dart';
 import 'platforms.dart';
 import 'services/download_service.dart';
+import 'services/review_prompt.dart';
 import 'webview_screen.dart';
 
 class PasteLinkScreen extends StatefulWidget {
@@ -339,6 +342,10 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
           ),
         ),
       );
+
+      // A video just landed in the gallery: the one moment the app has
+      // earned the right to ask for a rating.
+      unawaited(ReviewPrompt.instance.recordSave());
     } catch (e) {
       debugPrint('❌ Paste link download failed: $e');
 

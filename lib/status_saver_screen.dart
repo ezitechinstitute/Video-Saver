@@ -1,9 +1,12 @@
 import 'dart:typed_data';
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'error_message.dart';
+import 'services/review_prompt.dart';
 import 'services/status_service.dart';
 
 /// Saves statuses the user has already viewed in a messaging app.
@@ -109,6 +112,7 @@ class _StatusSaverScreenState extends State<StatusSaverScreen>
       if (!mounted) return;
       setState(() => _saved.add(item.uri));
       _toast('Saved to your gallery.', success: true);
+      unawaited(ReviewPrompt.instance.recordSave());
     } catch (e) {
       if (!mounted) return;
       _toast(friendlyError(e, 'The status could not be saved.'));
