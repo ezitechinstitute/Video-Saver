@@ -146,12 +146,19 @@ systemctl enable --now ezisaver-worker
 systemctl restart ezisaver-worker
 
 say "Nightly yt-dlp update (sites break it every few weeks)"
+# The update checks what it downloaded before installing it. A build without
+# curl_cffi impersonation looks fine and runs fine, and quietly stops Facebook,
+# Dailymotion and TikTok working — that is exactly what happened on 10 Oct 2026,
+# when this cron still pulled the plain yt-dlp.
 cat > /etc/cron.weekly/ezisaver-ytdlp <<CRON
 #!/bin/sh
 curl -fsSL https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp_linux \
     -o $APP/storage/app/bin/yt-dlp.exe.new \
   && chmod +x $APP/storage/app/bin/yt-dlp.exe.new \
+  && $APP/storage/app/bin/yt-dlp.exe.new --list-impersonate-targets 2>&1 | grep -qi 'curl_cffi$' \
+  && chown www-data:www-data $APP/storage/app/bin/yt-dlp.exe.new \
   && mv $APP/storage/app/bin/yt-dlp.exe.new $APP/storage/app/bin/yt-dlp.exe
+rm -f $APP/storage/app/bin/yt-dlp.exe.new
 CRON
 chmod +x /etc/cron.weekly/ezisaver-ytdlp
 
