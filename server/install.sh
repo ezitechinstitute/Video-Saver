@@ -166,12 +166,14 @@ say "Clear out finished downloads every 10 minutes, and never let the disk fill"
 # Downloads are only a hand-off: the app fetches each video seconds after it is
 # ready. Keeping them for a day or two, as this script first did, filled the
 # 10 GB disk on 20 Oct 2026 once traffic grew, and every download failed until
-# space was freed. They now last an hour, with a hard guard behind that.
+# space was freed. They now last 15 minutes — the phone has its own copy by
+# then — with a hard guard behind that. A transfer still under way is safe:
+# deleting a file nginx is sending does not cut the send short.
 rm -f /etc/cron.daily/ezisaver-cleanup
 cat > /usr/local/bin/ezisaver-cleanup <<SH
 #!/bin/sh
 D=$APP/storage/app/public/downloads
-find "\$D" -type f -mmin +60 -delete 2>/dev/null
+find "\$D" -type f -mmin +15 -delete 2>/dev/null
 
 # yt-dlp_linux unpacks itself into /tmp on every run; a run that is killed
 # leaves its copy behind, 40 MB at a time.
