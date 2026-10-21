@@ -169,8 +169,11 @@ class StatusSaver(private val activity: Activity) : MethodChannel.MethodCallHand
                 val mime = c.getString(2) ?: ""
                 if (name.startsWith(".")) continue
 
+                // Videos only. Photo statuses can already be kept with a
+                // screenshot, so people come here for the videos — and a grid
+                // half-full of photos buried them (user feedback, Oct 2026).
                 val video = mime.startsWith("video/")
-                if (!video && !mime.startsWith("image/")) continue
+                if (!video) continue
 
                 items += mapOf(
                     "uri" to DocumentsContract.buildDocumentUriUsingTree(tree, id).toString(),

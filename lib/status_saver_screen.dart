@@ -180,7 +180,7 @@ class _StatusSaverScreenState extends State<StatusSaverScreen>
                   ),
                 ),
                 Text(
-                  'Statuses you have already viewed',
+                  'Status videos you have already watched',
                   style: GoogleFonts.poppins(
                     color: const Color(0xFF8FA4C0),
                     fontSize: 10.5,
@@ -309,7 +309,7 @@ class _StatusSaverScreenState extends State<StatusSaverScreen>
               ),
               const SizedBox(height: 16),
               Text(
-                'Save statuses to your gallery',
+                'Save status videos to your gallery',
                 style: GoogleFonts.poppins(
                   color: Colors.white,
                   fontSize: 17,
@@ -317,13 +317,13 @@ class _StatusSaverScreenState extends State<StatusSaverScreen>
                 ),
               ),
               const SizedBox(height: 14),
-              _step('1', 'Open ${_source.label} and view the status you want.'),
+              _step('1', 'Open ${_source.label} and watch the status video you want.'),
               _step(
                 '2',
                 'Come back here and tap Allow access. A folder opens: tap '
                     'Use this folder, then Allow.',
               ),
-              _step('3', 'Tap any status to save it to your gallery.'),
+              _step('3', 'Tap any video to save it to your gallery.'),
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
@@ -385,7 +385,7 @@ class _StatusSaverScreenState extends State<StatusSaverScreen>
           ),
           const SizedBox(height: 14),
           Text(
-            'No statuses yet',
+            'No status videos yet',
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
               color: Colors.white,
@@ -395,7 +395,7 @@ class _StatusSaverScreenState extends State<StatusSaverScreen>
           ),
           const SizedBox(height: 6),
           Text(
-            'View a few statuses in ${_source.label}, then come back. '
+            'Watch a few status videos in ${_source.label}, then come back. '
             'Statuses disappear from the phone after 24 hours.',
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(

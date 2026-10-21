@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'downloads_screen.dart';
@@ -6,6 +7,8 @@ import 'how_to_download_screen.dart';
 import 'platform_glyphs.dart';
 import 'platforms.dart';
 import 'paste_link_screen.dart';
+import 'services/clipboard_link.dart';
+import 'services/update_prompt.dart';
 import 'status_saver_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -16,6 +19,17 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    // After the first frame, so Play's update sheet opens over a home screen
+    // that is already drawn rather than a blank one.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) UpdatePrompt.instance.check(context);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,14 +51,14 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 24),
           _buildHeroSection(),
           const SizedBox(height: 18),
-          _buildInfoCard(),
+          _buildPasteCard(),
+          const SizedBox(height: 14),
+          _buildStatusSaverCard(),
           const SizedBox(height: 26),
           _buildPlatformsHeader(),
           const SizedBox(height: 13),
           _buildPlatformGrid(),
           const SizedBox(height: 20),
-          _buildStatusSaverCard(),
-          const SizedBox(height: 12),
           _buildHowToDownloadCard(),
           const SizedBox(height: 12),
         ],
@@ -179,85 +193,176 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildInfoCard() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFF1769FF).withValues(alpha: 0.16),
-              Colors.white.withValues(alpha: 0.055),
-            ],
-          ),
-          border: Border.all(
-            color: const Color(0xFF69C4FF).withValues(alpha: 0.18),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF1769FF).withValues(alpha: 0.08),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
+  /// The fastest way in: one tap reads the copied link and starts saving.
+  ///
+  /// Every other route asks the person to pick a platform first, then paste —
+  /// but the link already says which platform it is from, so the home screen
+  /// can skip that step entirely.
+  Widget _buildPasteCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF1769FF).withValues(alpha: 0.22),
+            Colors.white.withValues(alpha: 0.05),
           ],
         ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
+        border: Border.all(
+          color: const Color(0xFF69C4FF).withValues(alpha: 0.30),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1769FF).withValues(alpha: 0.14),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Download any video',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Copy a link from TikTok, Instagram, Facebook or X, then tap below.',
+            style: GoogleFonts.poppins(
+              color: const Color(0xFF9DB3D3),
+              fontSize: 10.5,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0A1A3A),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.10),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.link_rounded,
+                  color: Color(0xFF6F8BB5),
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Your copied link goes here',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFF6F8BB5),
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: DecoratedBox(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
                 gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
                   colors: [Color(0xFF43C7FF), Color(0xFF246AF2)],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF42B8FF).withValues(alpha: 0.18),
-                    blurRadius: 14,
+                    color: const Color(0xFF2E8BFF).withValues(alpha: 0.30),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.download_rounded,
-                color: Colors.white,
-                size: 22,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: _pasteAndDownload,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.content_paste_go_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Paste & Download',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Save your favorite videos',
-                    style: GoogleFonts.poppins(
-                      color: const Color(0xFFEAF5FF),
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Choose a platform below to get started.',
-                    style: GoogleFonts.poppins(
-                      color: const Color(0xFF9DB3D3),
-                      fontSize: 10.5,
-                      height: 1.35,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Reads the clipboard and starts saving the video link on it.
+  Future<void> _pasteAndDownload() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final link = findVideoLink(data?.text);
+    if (!mounted) return;
+
+    if (link == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFF101A36),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          content: Text(
+            'No video link copied yet. Open the video, tap Share, '
+            'then Copy link, and come back.',
+            style: GoogleFonts.poppins(color: Colors.white, fontSize: 11),
+          ),
+        ),
+      );
+      return;
+    }
+
+    // The same link waiting on the clipboard must not start a second
+    // download when the app next comes back to the front.
+    await ClipboardLinkWatcher.instance.markHandled(link.url);
+    if (!mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PasteLinkScreen(
+          platformName: link.platform.name,
+          initialLink: link.url,
+          autoStart: true,
         ),
       ),
     );
@@ -429,7 +534,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    'Save statuses you have viewed to your gallery.',
+                    'Save the status videos you have watched.',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.poppins(
