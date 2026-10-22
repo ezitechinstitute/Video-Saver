@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.pm.PackageInfoCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -115,6 +116,10 @@ class MainActivity : FlutterActivity() {
 
                 "deviceInfo" -> result.success(
                     mapOf("label" to GallerySaver.deviceLabel(), "sdk" to Build.VERSION.SDK_INT),
+                )
+
+                "appVersionCode" -> result.success(
+                    PackageInfoCompat.getLongVersionCode(packageManager.getPackageInfo(packageName, 0)),
                 )
 
                 else -> result.notImplemented()
