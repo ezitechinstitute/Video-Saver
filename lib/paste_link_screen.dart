@@ -8,6 +8,7 @@ import 'how_to_download_screen.dart';
 import 'error_message.dart';
 import 'platforms.dart';
 import 'services/download_service.dart';
+import 'services/gallery.dart';
 import 'services/review_prompt.dart';
 import 'webview_screen.dart';
 
@@ -297,6 +298,7 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
           );
 
       final serverVideoUrl = completedDownload['video_url']?.toString();
+      final galleryUri = completedDownload['gallery_uri']?.toString();
 
       if (serverVideoUrl == null || serverVideoUrl.isEmpty) {
         throw Exception(
@@ -320,10 +322,17 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
         SnackBar(
           backgroundColor: const Color(0xff101A36),
           behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 4),
+          duration: const Duration(seconds: 6),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
+          action: galleryUri == null
+              ? null
+              : SnackBarAction(
+                  label: 'OPEN',
+                  textColor: const Color(0xff55C8FF),
+                  onPressed: () => Gallery.open(galleryUri),
+                ),
           content: Row(
             children: [
               const Icon(
@@ -334,7 +343,7 @@ class _PasteLinkScreenState extends State<PasteLinkScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Download complete! Your video is now available in the Gallery.',
+                  'Saved to your gallery, in the EziDownload album.',
                   style: GoogleFonts.poppins(color: Colors.white, fontSize: 11),
                 ),
               ),

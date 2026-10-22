@@ -3,12 +3,12 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:gal/gal.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 
 import 'download_notifier.dart';
+import 'gallery.dart';
 
 class DownloadService {
   DownloadService._();
@@ -236,7 +236,9 @@ class DownloadService {
     return 'VideoSaver_$middle${stamp}_$downloadId.mp4';
   }
 
-  Future<void> downloadToGallery({
+  /// Downloads the finished video and puts it in the gallery. Returns the
+  /// gallery URI, which [Gallery.open] accepts.
+  Future<String> downloadToGallery({
     required String videoUrl,
     required int downloadId,
     String? platform,
@@ -250,29 +252,7 @@ class DownloadService {
       debugPrint('==========================================');
 
       // ----------------------------------------------------------
-      // 1. Gallery permission
-      // ----------------------------------------------------------
-
-      debugPrint('🔐 Checking Gallery permission...');
-
-      final hasAccess = await Gal.hasAccess(toAlbum: true);
-
-      debugPrint('🔐 Gallery access: $hasAccess');
-
-      if (!hasAccess) {
-        debugPrint('🔐 Requesting Gallery permission...');
-
-        final granted = await Gal.requestAccess(toAlbum: true);
-
-        debugPrint('🔐 Permission result: $granted');
-
-        if (!granted) {
-          throw Exception('Gallery permission was not granted.');
-        }
-      }
-
-      // ----------------------------------------------------------
-      // 2. Temporary phone directory
+      // 1. Temporary phone directory
       // ----------------------------------------------------------
 
       final directory = await getTemporaryDirectory();
@@ -292,7 +272,7 @@ class DownloadService {
       }
 
       // ----------------------------------------------------------
-      // 3. Download video from Laravel server
+      // 2. Download video from Laravel server
       // ----------------------------------------------------------
 
       debugPrint('⬇️ Starting video download from server...');
@@ -321,7 +301,7 @@ class DownloadService {
       debugPrint('✅ Video downloaded to temporary file.');
 
       // ----------------------------------------------------------
-      // 4. Verify file
+      // 3. Verify file
       // ----------------------------------------------------------
 
       final fileExists = await file.exists();
@@ -344,13 +324,18 @@ class DownloadService {
       }
 
       // ----------------------------------------------------------
-      // 5. Save to Gallery
+      // 4. Save to Gallery
       // ----------------------------------------------------------
 
       debugPrint('🖼️ Saving video to Gallery...');
-      debugPrint('📁 Album: EziDownload');
+      debugPrint('📁 Album: Movies/EziDownload');
 
-      await Gal.putVideo(filePath, album: 'EziDownload');
+      final galleryUri = await Gallery.saveVideo(
+        filePath,
+        _fileNameFor(downloadId, platform),
+      );
+
+      debugPrint('🖼️ Gallery URI: $galleryUri');
 
       debugPrint('==========================================');
       debugPrint('🎉 VIDEO SUCCESSFULLY SAVED TO GALLERY');
@@ -359,7 +344,7 @@ class DownloadService {
       debugPrint('==========================================');
 
       // ----------------------------------------------------------
-      // 6. Delete temporary file
+      // 5. Delete temporary file
       // ----------------------------------------------------------
 
       if (await file.exists()) {
@@ -367,14 +352,8 @@ class DownloadService {
         await file.delete();
         debugPrint('✅ Temporary file removed.');
       }
-    } on GalException catch (e) {
-      debugPrint('==========================================');
-      debugPrint('❌ GALLERY ERROR');
-      debugPrint('❌ Type: ${e.type}');
-      debugPrint('❌ Message: ${e.type.message}');
-      debugPrint('==========================================');
 
-      throw Exception(e.type.message);
+      return galleryUri;
     } on DioException catch (e) {
       debugPrint('==========================================');
       debugPrint('❌ PHONE VIDEO DOWNLOAD ERROR');
@@ -494,7 +473,7 @@ class DownloadService {
       final platform = download['platform']?.toString();
       int lastNotifiedPercent = -1;
 
-      await downloadToGallery(
+      final galleryUri = await downloadToGallery(
         videoUrl: accessibleVideoUrl,
         downloadId: downloadId,
         platform: platform,
@@ -525,21 +504,52 @@ class DownloadService {
         success: true,
       );
 
+      unawaited(_reportToServer(downloadId, saved: true));
+
       debugPrint('==========================================');
       debugPrint('🏁 COMPLETE DOWNLOAD FLOW FINISHED');
       debugPrint('🆔 Download ID: $downloadId');
       debugPrint('==========================================');
 
-      return download;
+      return {...download, 'gallery_uri': galleryUri};
     } catch (e) {
+      final reason = e.toString().replaceFirst('Exception: ', '');
+
       await notifier.finish(
         downloadId: downloadId,
         title: 'Download failed',
-        text: e.toString().replaceFirst('Exception: ', ''),
+        text: reason,
         success: false,
       );
 
+      unawaited(_reportToServer(downloadId, saved: false, error: reason));
+
       rethrow;
+    }
+  }
+
+  /// Tells the server whether the video actually reached the gallery, and on
+  /// which phone. Without this a download looks finished on the server even
+  /// when the phone failed to save it, and the only way to learn otherwise is
+  /// a one-star review.
+  Future<void> _reportToServer(
+    int downloadId, {
+    required bool saved,
+    String? error,
+  }) async {
+    try {
+      await _dio.post(
+        '/downloads/$downloadId/phone-report',
+        data: {
+          'saved': saved,
+          'error': error == null || error.length <= 500
+              ? error
+              : error.substring(0, 500),
+          'device': await Gallery.deviceLabel(),
+        },
+      );
+    } catch (e) {
+      debugPrint('⚠️ Phone report not sent: $e');
     }
   }
 

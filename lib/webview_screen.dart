@@ -7,6 +7,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'error_message.dart';
 import 'platforms.dart';
 import 'services/download_service.dart';
+import 'services/gallery.dart';
 import 'services/review_prompt.dart';
 
 class WebViewScreen extends StatefulWidget {
@@ -528,6 +529,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
       // ============================================================
 
       final serverVideoUrl = completedDownload['video_url']?.toString();
+      final galleryUri = completedDownload['gallery_uri']?.toString();
 
       debugPrint('==========================================');
       debugPrint('✅ Server-side download completed.');
@@ -556,7 +558,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
       //       ↓
       // Dio download
       //       ↓
-      // Gal.putVideo()
+      // Gallery.saveVideo()
       //       ↓
       // Gallery
 
@@ -581,10 +583,17 @@ class _WebViewScreenState extends State<WebViewScreen> {
         SnackBar(
           backgroundColor: const Color(0xFF101A36),
           behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 4),
+          duration: const Duration(seconds: 6),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
+          action: galleryUri == null
+              ? null
+              : SnackBarAction(
+                  label: 'OPEN',
+                  textColor: const Color(0xFF4FC3F7),
+                  onPressed: () => Gallery.open(galleryUri),
+                ),
           content: Row(
             children: [
               const Icon(
@@ -595,7 +604,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Download complete! Your video is now available in the Gallery.',
+                  'Saved to your gallery, in the EziDownload album.',
                   style: GoogleFonts.poppins(color: Colors.white, fontSize: 11),
                 ),
               ),

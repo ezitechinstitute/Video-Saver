@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/services.dart';
-import 'package:gal/gal.dart';
+import 'gallery.dart';
 
 /// Which messaging app's statuses to show.
 enum StatusSource {
@@ -111,13 +111,8 @@ class StatusService {
   }
 
   /// Saves the status to the gallery, in the same album as downloads.
-  Future<void> saveToGallery(StatusItem item) async {
-    if (!await Gal.hasAccess(toAlbum: true)) {
-      if (!await Gal.requestAccess(toAlbum: true)) {
-        throw Exception('Gallery permission was not granted.');
-      }
-    }
-
+  /// Returns the gallery URI, which [Gallery.open] accepts.
+  Future<String> saveToGallery(StatusItem item) async {
     final path = await _channel.invokeMethod<String>('copyToCache', {
       'uri': item.uri,
       'name': item.name,
@@ -125,11 +120,7 @@ class StatusService {
     if (path == null) throw Exception('The status could not be opened.');
 
     try {
-      if (item.isVideo) {
-        await Gal.putVideo(path, album: 'EziDownload');
-      } else {
-        await Gal.putImage(path, album: 'EziDownload');
-      }
+      return await Gallery.saveVideo(path, item.name);
     } finally {
       final copy = File(path);
       if (await copy.exists()) await copy.delete();

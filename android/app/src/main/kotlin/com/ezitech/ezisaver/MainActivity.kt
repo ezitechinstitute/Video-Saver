@@ -38,6 +38,9 @@ class MainActivity : FlutterActivity() {
         // progress update puts the notification straight back.
         DownloadNotifications.cancelOngoing(applicationContext)
 
+        val appContext = applicationContext
+        Thread { GallerySaver.repairOldSaves(appContext) }.start()
+
         shareChannel = MethodChannel(messenger, SHARE_CHANNEL).apply {
             setMethodCallHandler { call, result ->
                 when (call.method) {
@@ -81,6 +84,38 @@ class MainActivity : FlutterActivity() {
                     DownloadNotifications.cancelOngoing(applicationContext)
                     result.success(null)
                 }
+
+                "saveVideo" -> {
+                    val path = call.argument<String>("path")
+                    val name = call.argument<String>("name")
+                    if (path == null || name == null) {
+                        result.error("bad_args", "path and name are required", null)
+                        return@setMethodCallHandler
+                    }
+                    // Copying tens of megabytes must stay off the UI thread.
+                    Thread {
+                        try {
+                            val uri = GallerySaver.saveVideo(applicationContext, java.io.File(path), name)
+                            runOnUiThread { result.success(uri.toString()) }
+                        } catch (e: Exception) {
+                            val reason = e.message ?: e.javaClass.simpleName
+                            runOnUiThread { result.error("save_failed", reason, e.javaClass.name) }
+                        }
+                    }.start()
+                }
+
+                "openVideo" -> {
+                    try {
+                        GallerySaver.open(this, android.net.Uri.parse(call.argument<String>("uri")))
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.success(false)
+                    }
+                }
+
+                "deviceInfo" -> result.success(
+                    mapOf("label" to GallerySaver.deviceLabel(), "sdk" to Build.VERSION.SDK_INT),
+                )
 
                 else -> result.notImplemented()
             }

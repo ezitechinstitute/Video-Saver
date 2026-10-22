@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'error_message.dart';
+import 'services/gallery.dart';
 import 'services/review_prompt.dart';
 import 'services/status_service.dart';
 
@@ -108,10 +109,14 @@ class _StatusSaverScreenState extends State<StatusSaverScreen>
     setState(() => _saving.add(item.uri));
 
     try {
-      await _service.saveToGallery(item);
+      final galleryUri = await _service.saveToGallery(item);
       if (!mounted) return;
       setState(() => _saved.add(item.uri));
-      _toast('Saved to your gallery.', success: true);
+      _toast(
+        'Saved to your gallery.',
+        success: true,
+        onOpen: () => Gallery.open(galleryUri),
+      );
       unawaited(ReviewPrompt.instance.recordSave());
     } catch (e) {
       if (!mounted) return;
@@ -121,9 +126,12 @@ class _StatusSaverScreenState extends State<StatusSaverScreen>
     }
   }
 
-  void _toast(String message, {bool success = false}) {
+  void _toast(String message, {bool success = false, VoidCallback? onOpen}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        action: onOpen == null
+            ? null
+            : SnackBarAction(label: 'OPEN', onPressed: onOpen),
         backgroundColor: success
             ? const Color(0xFF101A36)
             : Colors.red.shade900,
